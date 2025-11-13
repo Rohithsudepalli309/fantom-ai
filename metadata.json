@@ -1,0 +1,7 @@
+{
+  "name": "FANTOM AI",
+  "description": "An interactive web application to explore the various capabilities of the Google Gemini API, including text generation, chat, image generation, vision analysis, and structured JSON output.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

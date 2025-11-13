@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://aistudiocdn.com;
+    style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com;
+    img-src 'self' data:;
+    connect-src 'self' ws: wss: https://generativelanguage.googleapis.com https://*.supabase.co https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.firebaseio.com;
+    font-src 'self' data:;
+    object-src 'none';
+    base-uri 'self';
+    form-action 'self';
+  ">
+  <!-- Favicons: use /public/logo.png as the single source of truth; add multiple rels for better browser coverage -->
+  <link rel="icon" href="/logo.png" sizes="32x32" type="image/png" />
+  <link rel="icon" href="/logo.png" sizes="192x192" type="image/png" />
+  <link rel="apple-touch-icon" href="/logo.png" />
+  <link rel="mask-icon" href="/logo.svg" color="#7c3aed" />
+  <meta name="theme-color" content="#7c3aed" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FANTOM AI</title>
+    <script>
+      // Unified initial theme selection (avoids flash and respects stored preference or system)
+      (function() {
+        const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+        const stored = localStorage.getItem('theme');
+        const theme = stored === 'light' || stored === 'dark' ? stored : (prefersLight ? 'light' : 'dark');
+        document.documentElement.classList.remove('light','dark');
+        document.documentElement.classList.add(theme);
+      })();
+    </script>
+    <script>
+      // Generate square favicons (32 and 192) from /logo.png so the tab/address bar looks correct
+      // without altering the in-app image. We scale to fit the square to make the width appear broader.
+      (function() {
+        try {
+          const src = '/logo.png';
+          const img = new Image();
+          img.decoding = 'async';
+          img.crossOrigin = 'anonymous';
+          img.onload = function() {
+            const origW = img.naturalWidth || img.width || 256;
+            const origH = img.naturalHeight || img.height || 256;
+            function makeIcon(size) {
+              const canvas = document.createElement('canvas');
+              canvas.width = size; canvas.height = size;
+              const ctx = canvas.getContext('2d');
+              if (!ctx) return '';
+              // Scale to fit square (no cropping), centered
+              const scale = size / Math.max(origW, origH);
+              const dw = Math.round(origW * scale);
+              const dh = Math.round(origH * scale);
+              const dx = Math.floor((size - dw) / 2);
+              const dy = Math.floor((size - dh) / 2);
+              ctx.clearRect(0, 0, size, size);
+              ctx.drawImage(img, dx, dy, dw, dh);
+              return canvas.toDataURL('image/png');
+            }
+
+            const icon32 = makeIcon(32);
+            const icon192 = makeIcon(192);
+
+            // Remove existing icon links to avoid browsers sticking to the first one
+            document.querySelectorAll("link[rel='icon'], link[rel='shortcut icon'], link[rel='apple-touch-icon']").forEach(n => n.parentNode && n.parentNode.removeChild(n));
+
+            const addLink = (rel, sizes, href) => {
+              const link = document.createElement('link');
+              link.rel = rel;
+              if (sizes) link.sizes = sizes;
+              link.type = 'image/png';
+              link.href = href;
+              document.head.appendChild(link);
+            };
+
+            addLink('icon', '32x32', icon32);
+            addLink('icon', '192x192', icon192);
+            addLink('shortcut icon', '', icon32);
+            addLink('apple-touch-icon', '', icon192);
+          };
+          img.src = src;
+        } catch (_) { /* noop */ }
+      })();
+    </script>
+    <style>
+      body {
+        /* Set base colors for light mode, dark mode overrides will be applied via classes */
+        background-color: #f7f7f8; /* A slightly off-white for a softer look */
+      }
+      .dark body {
+        background-color: #131316; /* A deep, near-black for the new dark theme */
+      }
+      .root-fallback {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        font-family: sans-serif;
+        color: #4a5568;
+      }
+      .dark .root-fallback {
+        color: #a0aec0;
+      }
+    </style>
+  
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root">
+      <div class="root-fallback" role="status" aria-live="polite">
+        <p class="text-sm font-medium tracking-wide">
+          <span class="inline-block animate-pulse">Loading FANTOM AI…</span>
+        </p>
+        <noscript>
+          <p class="mt-2 text-xs">JavaScript disabled — enable it to continue.</p>
+        </noscript>
+      </div>
+    </div>
+    <noscript>
+      <div class="root-fallback" role="alert">
+        <p class="text-sm">This application requires JavaScript to run. Please enable it in your browser settings.</p>
+      </div>
+    </noscript>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
