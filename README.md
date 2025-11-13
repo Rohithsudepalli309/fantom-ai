@@ -52,6 +52,7 @@ From the project root:
 ```powershell
 npx pnpm smoke:text    # text generation
 npx pnpm smoke:image   # image (Google image APIs may require billing)
+npx pnpm smoke:image:hf # image via Hugging Face (requires VITE_HF_API_TOKEN)
 npx pnpm smoke:vision  # vision (describe public/logo.png)
 ```
 
