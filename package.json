@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "smoke:text": "node scripts/smoke-gemini.mjs",
     "smoke:image": "node scripts/smoke-gemini.mjs --image",
+    "smoke:image:hf": "node scripts/test-image-hf.mjs",
     "smoke:vision": "node scripts/smoke-vision.mjs"
   },
   "dependencies": {
