@@ -6,7 +6,13 @@ if (!token) {
   process.exit(1);
 }
 
-const model = process.env.VITE_HF_IMAGE_MODEL || 'stabilityai/sdxl-turbo';
+const preferredModel = process.env.VITE_HF_IMAGE_MODEL || 'stabilityai/sdxl-turbo';
+const candidateModels = Array.from(new Set([
+  preferredModel,
+  'stabilityai/sd-turbo',
+  'black-forest-labs/FLUX.1-schnell',
+  'segmind/SSD-1B'
+]));
 const prompt = 'minimal line icon, circle, black on white';
 const aspect = '1:1';
 let width = 1024, height = 1024;
@@ -23,10 +29,10 @@ const body = {
   }
 };
 
-// Updated endpoint per deprecation notice
-const url = `https://router.huggingface.co/hf-inference/models/${encodeURIComponent(model)}`;
+const routerUrlFor = (m) => `https://router.huggingface.co/hf-inference/models/${encodeURIComponent(m)}`;
+const legacyUrlFor = (m) => `https://api-inference.huggingface.co/models/${encodeURIComponent(m)}`;
 
-const tryOnce = async () => {
+const tryOnce = async (url) => {
   const res = await fetch(url, {
     method: 'POST',
     headers: {
@@ -41,20 +47,46 @@ const tryOnce = async () => {
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
-let res = await tryOnce();
-let attempts = 0;
-while (!res.ok && attempts < 3) {
-  let msg = '';
-  try { const j = await res.clone().json(); msg = String(j?.error || ''); } catch {}
-  if (res.status === 503 || msg.toLowerCase().includes('loading')) {
-    attempts++;
-    await sleep(1500 * attempts);
-    res = await tryOnce();
-    continue;
+async function tryModel(modelName) {
+  // 1) Try router endpoint first with limited retries for 503/loading
+  let res = await tryOnce(routerUrlFor(modelName));
+  let attempts = 0;
+  while (!res.ok && attempts < 2) {
+    let msg = '';
+    try { const j = await res.clone().json(); msg = String(j?.error || ''); } catch {}
+    if (res.status === 503 || msg.toLowerCase().includes('loading')) {
+      attempts++;
+      await sleep(1500 * attempts);
+      res = await tryOnce(routerUrlFor(modelName));
+      continue;
+    }
+    break;
   }
-  break;
+  // 2) Router is the supported API; if it's a permission/not-found issue, skip to next model
+  return res;
 }
 
+let res;
+let usedModel = '';
+for (const m of candidateModels) {
+  const attempt = await tryModel(m);
+  if (attempt.ok) { res = attempt; usedModel = m; break; }
+  // Skip on hard errors and continue trying next model
+  if ([401, 403, 404, 405].includes(attempt.status)) {
+    continue;
+  } else {
+    // For other errors like 5xx, try next candidate after a short delay
+    await sleep(800);
+    continue;
+  }
+}
+
+if (!res || !res.ok) {
+  let detail = res ? `${res.status} ${res.statusText}` : 'no response';
+  try { if (res) { const j = await res.json(); if (j?.error) detail = j.error } } catch {}
+  console.error('HF generation failed:', detail);
+  process.exit(2);
+}
 if (!res.ok) {
   let detail = `${res.status} ${res.statusText}`;
   try { const j = await res.json(); if (j?.error) detail = j.error } catch {}
@@ -64,4 +96,4 @@ if (!res.ok) {
 
 const buf = Buffer.from(await res.arrayBuffer());
 const b64 = buf.toString('base64');
-console.log('HF OK', { model, bytes: buf.length, dataUrlPrefix: 'data:image/png;base64,' + b64.slice(0, 40) + '...' });
+console.log('HF OK', { model: usedModel, bytes: buf.length, dataUrlPrefix: 'data:image/png;base64,' + b64.slice(0, 40) + '...' });
