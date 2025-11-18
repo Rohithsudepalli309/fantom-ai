@@ -6,7 +6,7 @@ if (!token) {
   process.exit(1);
 }
 
-const preferredModel = process.env.VITE_HF_IMAGE_MODEL || 'stabilityai/sdxl-turbo';
+const preferredModel = process.env.VITE_HF_IMAGE_MODEL || 'stabilityai/stable-diffusion-xl-base-1.0';
 const candidateModels = Array.from(new Set([
   preferredModel,
   'stabilityai/sd-turbo',

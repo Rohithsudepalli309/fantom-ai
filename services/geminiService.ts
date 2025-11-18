@@ -192,12 +192,12 @@ function getHuggingFaceToken(): string | undefined {
 
 function getHuggingFaceModel(): string {
     // Allow override via env; default to a fast, widely-used model
-    // "stabilityai/sdxl-turbo" generally supports low-step fast generation.
+    // Default now targets SDXL Base 1.0 for higher quality outputs.
     // You can set VITE_HF_IMAGE_MODEL to switch (e.g., "black-forest-labs/FLUX.1-schnell").
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const envAny = import.meta as any;
     const model = envAny?.env?.VITE_HF_IMAGE_MODEL as string | undefined;
-    return model || "stabilityai/sdxl-turbo";
+    return model || "stabilityai/stable-diffusion-xl-base-1.0";
 }
 
 // (Stateless chat streaming is used; no active chat session cache required)

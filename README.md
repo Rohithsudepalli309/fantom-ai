@@ -18,7 +18,7 @@ Prerequisites: Node.js 18+
    - Required (text/chat/vision): `VITE_GEMINI_API_KEY=YOUR_GEMINI_KEY`
    - Optional (free image generation fallback):
      - `VITE_HF_API_TOKEN=YOUR_HUGGING_FACE_TOKEN`
-     - `VITE_HF_IMAGE_MODEL=stabilityai/sdxl-turbo` (optional override)
+   - `VITE_HF_IMAGE_MODEL=stabilityai/stable-diffusion-xl-base-1.0` (optional override)
 
    Notes:
    - If `VITE_HF_API_TOKEN` is present, Image Generation will use the Hugging Face Inference API first.
