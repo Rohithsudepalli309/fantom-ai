@@ -230,7 +230,15 @@ export async function generateRobustImage(
     style: ImageStyle,
     aspectRatio: AspectRatio,
     preferred: ImageModel,
-    format?: ImageFormat
+    format?: ImageFormat,
+    advanced?: {
+        width?: number;
+        height?: number;
+        steps?: number;
+        guidance?: number;
+        modelOverride?: string;
+        negativePrompt?: string;
+    }
 ): Promise<ImageGenerationResponse> {
     return enqueueImageTask(async () => {
         const isCoolingDown = Date.now() < rateLimitUntil;
@@ -240,7 +248,7 @@ export async function generateRobustImage(
     const attempt = async <T>(fn: () => Promise<T>) => withRetries(fn, 1, 600);
 
     // Providers as small lambdas
-    const runHF = () => hfToken ? generateImageViaHuggingFace(prompt, aspectRatio, hfToken, style, format) : Promise.resolve({ success: false, error: 'Hugging Face token missing.' } as ImageGenerationResponse);
+    const runHF = () => hfToken ? generateImageViaHuggingFace(prompt, aspectRatio, hfToken, style, format, advanced) : Promise.resolve({ success: false, error: 'Hugging Face token missing.' } as ImageGenerationResponse);
     const runImagenDirect = () => generateImagenOnly(prompt, aspectRatio, format); // Avoid implicit HF attempt
         const runNano = () => generateImageNano(prompt, style, aspectRatio);
 
@@ -665,10 +673,11 @@ async function generateImageViaHuggingFace(
     aspectRatio: AspectRatio,
     token: string,
     style?: ImageStyle,
-    format?: ImageFormat
+    format?: ImageFormat,
+    advanced?: { width?: number; height?: number; steps?: number; guidance?: number; modelOverride?: string; negativePrompt?: string }
 ): Promise<ImageGenerationResponse> {
     try {
-        const modelId = getHuggingFaceModel();
+        const modelId = advanced?.modelOverride?.trim() || getHuggingFaceModel();
 
         // If style provided, gently bias the prompt
         let promptWithStyle = prompt;
@@ -676,28 +685,34 @@ async function generateImageViaHuggingFace(
             promptWithStyle += `, in a ${style.replace(/-/g, ' ')} style`;
         }
 
-        // Map aspect ratio to width/height (multiples of 64 recommended for SDXL / diffusion models)
-        // Map a variety of aspect ratios to reasonable SDXL-friendlyDims (multiples of 64)
-        let width = 1024, height = 1024;
-        switch (aspectRatio) {
-            case '16:9': width = 1344; height = 768; break;
-            case '9:16': width = 768; height = 1344; break;
-            case '4:3': width = 1152; height = 864; break;
-            case '3:2': width = 1152; height = 768; break;
-            case '2:3': width = 768; height = 1152; break;
-            case '21:9': width = 1536; height = 672; break;
-            case '9:21': width = 672; height = 1536; break;
-            case '5:4': width = 1280; height = 1024; break;
-            default: width = 1024; height = 1024;
+        // Dimensions: from advanced overrides, else map from aspect ratio
+        let width = advanced?.width ?? 1024;
+        let height = advanced?.height ?? 1024;
+        if (!advanced?.width || !advanced?.height) {
+            switch (aspectRatio) {
+                case '16:9': width = 1344; height = 768; break;
+                case '9:16': width = 768; height = 1344; break;
+                case '4:3': width = 1152; height = 864; break;
+                case '3:2': width = 1152; height = 768; break;
+                case '2:3': width = 768; height = 1152; break;
+                case '21:9': width = 1536; height = 672; break;
+                case '9:21': width = 672; height = 1536; break;
+                case '5:4': width = 1280; height = 1024; break;
+                default: width = 1024; height = 1024;
+            }
         }
+        // Round to nearest multiple of 64 to satisfy diffusion models
+        const round64 = (n: number) => Math.max(64, Math.round(n / 64) * 64);
+        width = round64(width); height = round64(height);
 
         const body = {
             inputs: promptWithStyle,
             parameters: {
                 width,
                 height,
-                num_inference_steps: 4,
-                guidance_scale: 0,
+                num_inference_steps: Math.max(1, Math.min(advanced?.steps ?? 4, 75)),
+                guidance_scale: Math.max(0, Math.min(advanced?.guidance ?? 0, 20)),
+                negative_prompt: advanced?.negativePrompt ?? '',
             }
         } as Record<string, unknown>;
 

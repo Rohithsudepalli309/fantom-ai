@@ -43,6 +43,14 @@ const ImageGeneration: React.FC = () => {
     const [enhancedPrompt, setEnhancedPrompt] = useState<string | null>(null);
 
     const { prompt, model, style, aspectRatio } = settings;
+    // Advanced controls (HF only)
+    const [advOpen, setAdvOpen] = useState<boolean>(false);
+    const [advWidth, setAdvWidth] = useState<number>(1024);
+    const [advHeight, setAdvHeight] = useState<number>(1024);
+    const [advSteps, setAdvSteps] = useState<number>(20);
+    const [advGuidance, setAdvGuidance] = useState<number>(7);
+    const [advModel, setAdvModel] = useState<string>('stabilityai/stable-diffusion-xl-base-1.0');
+    const [advNegative, setAdvNegative] = useState<string>('');
     const [hfAvailable, setHfAvailable] = useState<boolean>(false);
     const [hfReachable, setHfReachable] = useState<boolean>(false);
     const [showHfHelper, setShowHfHelper] = useState<boolean>(() => {
@@ -131,7 +139,15 @@ const ImageGeneration: React.FC = () => {
         
         setLoadingStep('generating');
         // Centralized robust flow (serializes requests & handles fallbacks)
-    const response: ImageGenerationResponse = await generateRobustImage(finalPrompt, st, ar, m, settings.format);
+        const advanced = m === 'huggingface' && advOpen ? {
+            width: advWidth,
+            height: advHeight,
+            steps: advSteps,
+            guidance: advGuidance,
+            modelOverride: advModel,
+            negativePrompt: advNegative || undefined,
+        } : undefined;
+        const response: ImageGenerationResponse = await generateRobustImage(finalPrompt, st, ar, m, settings.format, advanced);
         
     setResult(response);
         setIsLoading(false);
@@ -358,6 +374,54 @@ const ImageGeneration: React.FC = () => {
                                                                                                                                                                                                         <span>Token missing. Add VITE_HF_API_TOKEN.</span>
                                                                                                                                                                                                     )}
                                                                                                                                                                                                 </div>
+                                    {model === 'huggingface' && (
+                                        <div className="mt-2 border rounded-md border-slate-300 dark:border-slate-700">
+                                            <button
+                                                className="w-full text-left px-3 py-2 text-sm font-semibold bg-slate-100 dark:bg-slate-800 rounded-t-md"
+                                                onClick={() => setAdvOpen(v => !v)}
+                                                aria-expanded={advOpen}
+                                            >Advanced (SDXL)</button>
+                                            {advOpen && (
+                                                <div className="px-3 py-2 space-y-2">
+                                                    <div className="flex gap-2 items-center">
+                                                        <label className="text-xs w-28">HF Model</label>
+                                                        <select className="flex-1 p-1 text-sm bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded"
+                                                            value={advModel}
+                                                            onChange={e => setAdvModel(e.target.value)}>
+                                                            <option value="stabilityai/stable-diffusion-xl-base-1.0">SDXL Base 1.0 (HF)</option>
+                                                            <option value="black-forest-labs/FLUX.1-schnell">FLUX.1-schnell (HF)</option>
+                                                            <option value="stabilityai/sd-turbo">SD-Turbo (HF)</option>
+                                                        </select>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <label className="text-xs w-16">Width</label>
+                                                            <input type="number" min={64} step={64} className="w-full p-1 text-sm bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded" value={advWidth} onChange={e => setAdvWidth(parseInt(e.target.value || '0', 10) || 64)} />
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <label className="text-xs w-16">Height</label>
+                                                            <input type="number" min={64} step={64} className="w-full p-1 text-sm bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded" value={advHeight} onChange={e => setAdvHeight(parseInt(e.target.value || '0', 10) || 64)} />
+                                                        </div>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <label className="text-xs w-16">Steps</label>
+                                                            <input type="number" min={1} max={75} className="w-full p-1 text-sm bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded" value={advSteps} onChange={e => setAdvSteps(Math.max(1, Math.min(75, parseInt(e.target.value || '1', 10))))} />
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <label className="text-xs w-16">CFG</label>
+                                                            <input type="number" min={0} max={20} step={0.5} className="w-full p-1 text-sm bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded" value={advGuidance} onChange={e => setAdvGuidance(Math.max(0, Math.min(20, parseFloat(e.target.value || '0'))))} />
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-xs">Negative Prompt</label>
+                                                        <input type="text" className="w-full mt-1 p-1 text-sm bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded" value={advNegative} onChange={e => setAdvNegative(e.target.value)} placeholder="e.g., low quality, blurry" />
+                                                    </div>
+                                                    <p className="text-[11px] text-slate-500">Tip: SDXL prefers dimensions in multiples of 64. Defaults are 1024×1024.</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                                                                                 {!hfAvailable && showHfHelper && (
                                                                                                     <div className="mt-2 text-[11px] text-slate-600 dark:text-slate-400 flex items-center gap-2 flex-wrap">
                                                                                                         <span className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-[10px]">HF requires token</span>
