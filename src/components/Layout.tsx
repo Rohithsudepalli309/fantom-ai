@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { useOutlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import { Logo } from './Logo';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 const Layout: React.FC = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const { user, signOut } = useAuth();
-    const location = useLocation();
+    const outlet = useOutlet();
 
     return (
         <div className="flex h-screen w-full bg-background text-foreground overflow-hidden">
@@ -52,7 +52,7 @@ const Layout: React.FC = () => {
 
                 {/* Page Content */}
                 <main className="flex-1 overflow-y-auto p-4 md:p-6 relative">
-                    <Outlet />
+                    {outlet as React.ReactNode}
                 </main>
             </div>
         </div>

@@ -1,6 +1,6 @@
 // MongoDB connection and user helpers for Fantom AI
 const { MongoClient } = require('mongodb');
-const MONGO_URL = process.env.MONGO_URL || 'mongodb://localhost:27017';
+const MONGO_URI = process.env.MONGO_URI || process.env.MONGO_URL || 'mongodb://127.0.0.1:27017';
 const DB_NAME = process.env.MONGO_DB || 'fantom-ai';
 const COLLECTION = 'users';
 
@@ -8,12 +8,22 @@ let client;
 let db;
 
 async function connectMongo() {
-    if (!client) {
-        client = new MongoClient(MONGO_URL, { useUnifiedTopology: true });
-        await client.connect();
-        db = client.db(DB_NAME);
+    try {
+        if (!client) {
+            console.log(`[mongo] Connecting to ${MONGO_URI}...`);
+            client = new MongoClient(MONGO_URI, {
+                serverSelectionTimeoutMS: 5000,
+                connectTimeoutMS: 5000
+            });
+            await client.connect();
+            console.log('[mongo] Connected successfully');
+            db = client.db(DB_NAME);
+        }
+        return db.collection(COLLECTION);
+    } catch (e) {
+        console.error('[mongo] Connection failed:', e);
+        throw e;
     }
-    return db.collection(COLLECTION);
 }
 
 async function findUserByEmail(email) {

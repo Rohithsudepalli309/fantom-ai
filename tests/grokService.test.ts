@@ -1,26 +1,36 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { generateGrokImage, isGrokConfigured } from '../src/services/grokService';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { generateGrokImage, isGrokConfigured, getGrokBaseUrl } from '../src/services/grokService';
 
 // Mock global fetch
 global.fetch = vi.fn();
 
 describe('grokService', () => {
+    let getItemSpy: any;
+
     beforeEach(() => {
         vi.resetAllMocks();
+        // Spy on existing localStorage.getItem
+        getItemSpy = vi.spyOn(Storage.prototype, 'getItem');
+
+        // Try stubbing env
+        vi.stubEnv('VITE_XAI_BASE_URL', 'https://api.x.ai');
+        vi.stubEnv('VITE_XAI_API_KEY', 'fake-key');
+    });
+
+    afterEach(() => {
+        getItemSpy.mockRestore();
+        vi.unstubAllEnvs();
     });
 
     it('should check configuration correctly', () => {
-        // Mock import.meta.env
-        vi.stubGlobal('import.meta', { env: { VITE_XAI_API_KEY: 'test-key' } });
-        // This might be tricky with how vitest handles import.meta. 
-        // Alternatively, we can mock the getGrokApiKey function if we exported it, 
-        // but let's try stubbing the env first or just rely on the service logic.
-
-        // Since we can't easily mock import.meta in this context without more setup,
-        // let's assume the service handles missing keys gracefully.
+        getItemSpy.mockReturnValue('test-key');
+        expect(isGrokConfigured()).toBe(true);
     });
 
     it('should handle successful image generation', async () => {
+        console.log('Window defined?', typeof window !== 'undefined');
+        console.log('Base URL:', getGrokBaseUrl());
+
         const mockResponse = {
             data: [{
                 url: 'https://example.com/image.png',
@@ -33,19 +43,20 @@ describe('grokService', () => {
             json: async () => mockResponse
         });
 
-        // We need to ensure getGrokApiKey returns something. 
-        // We can mock window.localStorage since the service checks it.
-        const localStorageMock = {
-            getItem: vi.fn().mockReturnValue('fake-key'),
-        };
-        vi.stubGlobal('window', { localStorage: localStorageMock });
+        // Mock config via localStorage spy
+        getItemSpy.mockImplementation((key: string) => {
+            if (key === 'VITE_XAI_API_KEY') return 'fake-key';
+            if (key === 'VITE_XAI_BASE_URL') return 'https://api.x.ai';
+            if (key === 'VITE_XAI_IMAGE_MODEL') return 'grok-2-image-1212';
+            return null;
+        });
 
         const result = await generateGrokImage({ prompt: 'test prompt' });
 
         expect(result.success).toBe(true);
         expect(result.url).toBe('https://example.com/image.png');
         expect(global.fetch).toHaveBeenCalledWith(
-            expect.stringContaining('/v1/images/generations'),
+            expect.stringContaining('https://api.x.ai/v1/images/generations'),
             expect.objectContaining({
                 method: 'POST',
                 headers: expect.objectContaining({
@@ -62,10 +73,11 @@ describe('grokService', () => {
             text: async () => 'Bad Request'
         });
 
-        const localStorageMock = {
-            getItem: vi.fn().mockReturnValue('fake-key'),
-        };
-        vi.stubGlobal('window', { localStorage: localStorageMock });
+        getItemSpy.mockImplementation((key: string) => {
+            if (key === 'VITE_XAI_API_KEY') return 'fake-key';
+            if (key === 'VITE_XAI_BASE_URL') return 'https://api.x.ai';
+            return null;
+        });
 
         const result = await generateGrokImage({ prompt: 'test prompt' });
 

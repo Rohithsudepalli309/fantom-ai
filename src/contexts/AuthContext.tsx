@@ -206,36 +206,56 @@ function getBackend(): AuthBackend {
   if (provider === 'jwt') {
     const jwtBackend: AuthBackend = {
       async signUp(email: string, password: string) {
-        const resp = await fetch('/api/auth/signup', {
+        const resp = await fetch('/api/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
           body: JSON.stringify({ email, password })
         });
         const data = await resp.json().catch(() => ({}));
-        if (!resp.ok || data?.ok === false) {
+        if (!resp.ok) {
           throw new Error(data?.error || `Signup failed (${resp.status})`);
         }
-        return { uid: data.id || 'jwt_' + Math.random().toString(36).slice(2) };
+        // Server returns { insertedId }
+        return { uid: data.insertedId || 'jwt_' + Math.random().toString(36).slice(2) };
       },
       async signIn(email: string, password: string) {
-        const resp = await fetch('/api/auth/login', {
+        const resp = await fetch('/api/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
           body: JSON.stringify({ email, password })
         });
         const data = await resp.json().catch(() => ({}));
-        if (!resp.ok || data?.ok === false) {
+        if (!resp.ok) {
           throw new Error(data?.error || `Login failed (${resp.status})`);
         }
-        const uid = data?.user?.id || 'jwt_' + Math.random().toString(36).slice(2);
-        localStorage.setItem('auth_session', JSON.stringify({ uid, email }));
-        return { uid, email };
+        // Server returns { token }
+        const token = data.token;
+        if (!token) throw new Error('No token received');
+
+        // We need to get the user details (uid, email)
+        // We can decode the token or fetch profile
+        // For now, let's fetch profile to get email
+        const profileResp = await fetch('/api/profile', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const profile = await profileResp.json();
+
+        // Store token in localStorage (AuthContext usually manages session, but we need to store the token for requests)
+        // The current AuthContext uses 'auth_session' for user info. 
+        // We should probably store the token separately or include it in auth_session.
+        // For simplicity, let's store it in a separate key 'auth_token'
+        localStorage.setItem('auth_token', token);
+
+        const uid = profile.id || 'jwt_' + Math.random().toString(36).slice(2); // Profile might not return ID, use fallback or decode token
+        const userEmail = profile.email || email;
+
+        localStorage.setItem('auth_session', JSON.stringify({ uid, email: userEmail }));
+        return { uid, email: userEmail };
       },
       async signOut() {
-        try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }); } catch { /* ignore */ }
+        // Client-side only
         localStorage.removeItem('auth_session');
+        localStorage.removeItem('auth_token');
       },
       getSession,
     };
@@ -302,18 +322,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (providerRaw === 'jwt') {
         const checkAuth = async () => {
           try {
-            let r = await fetch('/api/auth/me', { method: 'GET', credentials: 'include' });
-            if (r.status === 401) {
-              // Try refresh
-              const ref = await fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' });
-              if (ref.ok) {
-                r = await fetch('/api/auth/me', { method: 'GET', credentials: 'include' });
-              }
+            const token = localStorage.getItem('auth_token');
+            if (!token) return;
+
+            const r = await fetch('/api/profile', {
+              method: 'GET',
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!r.ok) {
+              // Token invalid or expired
+              localStorage.removeItem('auth_token');
+              localStorage.removeItem('auth_session');
+              setUser(null);
+              return;
             }
-            if (!r.ok) return;
+
             const d = await r.json();
-            if (d?.ok) {
-              const sess = { uid: d.id as string, email: d.email as string };
+            if (d?.email) {
+              const sess = { uid: d.id || 'jwt_user', email: d.email };
               localStorage.setItem('auth_session', JSON.stringify(sess));
               setUser({ uid: sess.uid, email: sess.email });
             }

@@ -27,7 +27,12 @@ if (!key) {
 
 async function testGrok() {
     console.log('Testing Grok Image Generation...');
-    const baseUrl = (process.env.VITE_XAI_BASE_URL || 'https://api.x.ai').replace(/\/v1\/?$/, '');
+    // Force correct xAI URL if env var is pointing to OpenRouter (common misconfiguration)
+    let baseUrl = (process.env.VITE_XAI_BASE_URL || 'https://api.x.ai').replace(/\/v1\/?$/, '');
+    if (baseUrl.includes('openrouter')) {
+        console.warn('Warning: VITE_XAI_BASE_URL points to OpenRouter. Overriding to https://api.x.ai for this smoke test.');
+        baseUrl = 'https://api.x.ai';
+    }
     const url = `${baseUrl}/v1/images/generations`;
     const model = process.env.VITE_XAI_IMAGE_MODEL || 'grok-2-image-1212';
     console.log('Fetching:', url);

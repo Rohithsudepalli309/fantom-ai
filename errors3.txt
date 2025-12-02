@@ -1,0 +1,8 @@
+src/components/PageTransition.tsx(39,13): error TS2322: Type '{ type: string; ease: string; duration: number; }' is not assignable to type 'Transition<any>'.
+  Type '{ type: string; ease: string; duration: number; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+    Type '{ type: string; ease: string; duration: number; }' is not assignable to type 'ValueAnimationTransition<any>'.
+      Types of property 'type' are incompatible.
+        Type 'string' is not assignable to type 'AnimationGeneratorType'.
+tests/App.test.tsx(78,42): error TS2604: JSX element type 'Outlet' does not have any construct or call signatures.
+tests/App.test.tsx(78,42): error TS2786: 'Outlet' cannot be used as a JSX component.
+  Its type 'unknown' is not a valid JSX element type.

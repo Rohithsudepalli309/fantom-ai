@@ -1,0 +1,66 @@
+src/App.tsx(25,14): error TS2786: 'Routes' cannot be used as a JSX component.
+  Its type '({ children, location, }: RoutesProps) => ReactElement' is not a valid JSX element type.
+    Type '({ children, location, }: RoutesProps) => ReactElement' is not assignable to type '(props: any, deprecatedLegacyContext?: any) => ReactNode'.
+      Type 'ReactElement' is not assignable to type 'ReactNode'.
+src/App.tsx(26,18): error TS2786: 'Route' cannot be used as a JSX component.
+  Its type '(props: RouteProps) => ReactElement' is not a valid JSX element type.
+    Type '(props: RouteProps) => ReactElement' is not assignable to type '(props: any, deprecatedLegacyContext?: any) => ReactNode'.
+      Type 'ReactElement' is not assignable to type 'ReactNode'.
+src/App.tsx(27,22): error TS2786: 'Route' cannot be used as a JSX component.
+  Its type '(props: RouteProps) => ReactElement' is not a valid JSX element type.
+    Type '(props: RouteProps) => ReactElement' is not assignable to type '(props: any, deprecatedLegacyContext?: any) => ReactNode'.
+      Type 'ReactElement' is not assignable to type 'ReactNode'.
+src/App.tsx(28,22): error TS2786: 'Route' cannot be used as a JSX component.
+  Its type '(props: RouteProps) => ReactElement' is not a valid JSX element type.
+    Type '(props: RouteProps) => ReactElement' is not assignable to type '(props: any, deprecatedLegacyContext?: any) => ReactNode'.
+      Type 'ReactElement' is not assignable to type 'ReactNode'.
+src/App.tsx(35,22): error TS2786: 'Route' cannot be used as a JSX component.
+  Its type '(props: RouteProps) => ReactElement' is not a valid JSX element type.
+    Type '(props: RouteProps) => ReactElement' is not assignable to type '(props: any, deprecatedLegacyContext?: any) => ReactNode'.
+      Type 'ReactElement' is not assignable to type 'ReactNode'.
+src/App.tsx(42,22): error TS2786: 'Route' cannot be used as a JSX component.
+  Its type '(props: RouteProps) => ReactElement' is not a valid JSX element type.
+    Type '(props: RouteProps) => ReactElement' is not assignable to type '(props: any, deprecatedLegacyContext?: any) => ReactNode'.
+      Type 'ReactElement' is not assignable to type 'ReactNode'.
+src/App.tsx(49,22): error TS2786: 'Route' cannot be used as a JSX component.
+  Its type '(props: RouteProps) => ReactElement' is not a valid JSX element type.
+    Type '(props: RouteProps) => ReactElement' is not assignable to type '(props: any, deprecatedLegacyContext?: any) => ReactNode'.
+      Type 'ReactElement' is not assignable to type 'ReactNode'.
+src/App.tsx(56,22): error TS2786: 'Route' cannot be used as a JSX component.
+  Its type '(props: RouteProps) => ReactElement' is not a valid JSX element type.
+    Type '(props: RouteProps) => ReactElement' is not assignable to type '(props: any, deprecatedLegacyContext?: any) => ReactNode'.
+      Type 'ReactElement' is not assignable to type 'ReactNode'.
+src/App.tsx(63,22): error TS2786: 'Route' cannot be used as a JSX component.
+  Its type '(props: RouteProps) => ReactElement' is not a valid JSX element type.
+    Type '(props: RouteProps) => ReactElement' is not assignable to type '(props: any, deprecatedLegacyContext?: any) => ReactNode'.
+      Type 'ReactElement' is not assignable to type 'ReactNode'.
+src/App.tsx(70,22): error TS2786: 'Route' cannot be used as a JSX component.
+  Its type '(props: RouteProps) => ReactElement' is not a valid JSX element type.
+    Type '(props: RouteProps) => ReactElement' is not assignable to type '(props: any, deprecatedLegacyContext?: any) => ReactNode'.
+      Type 'ReactElement' is not assignable to type 'ReactNode'.
+src/App.tsx(77,22): error TS2786: 'Route' cannot be used as a JSX component.
+  Its type '(props: RouteProps) => ReactElement' is not a valid JSX element type.
+    Type '(props: RouteProps) => ReactElement' is not assignable to type '(props: any, deprecatedLegacyContext?: any) => ReactNode'.
+      Type 'ReactElement' is not assignable to type 'ReactNode'.
+src/components/Markdown.tsx(27,8): error TS2786: 'ReactMarkdown' cannot be used as a JSX component.
+  Its type '(options: Readonly<Options>) => ReactElement' is not a valid JSX element type.
+    Type '(options: Readonly<Options>) => ReactElement' is not assignable to type '(props: any, deprecatedLegacyContext?: any) => ReactNode'.
+      Type 'ReactElement' is not assignable to type 'ReactNode'.
+src/components/ui/button.tsx(33,19): error TS2694: Namespace '"react"' has no exported member 'ButtonHTMLAttributes'.
+src/components/ui/button.tsx(40,8): error TS2339: Property 'className' does not exist on type 'ButtonProps'.
+src/components/ui/card.tsx(6,11): error TS2694: Namespace '"react"' has no exported member 'ComponentProps'.
+src/components/ui/card.tsx(21,11): error TS2694: Namespace '"react"' has no exported member 'ComponentProps'.
+src/components/ui/card.tsx(33,11): error TS2694: Namespace '"react"' has no exported member 'ComponentProps'.
+src/components/ui/card.tsx(48,11): error TS2694: Namespace '"react"' has no exported member 'ComponentProps'.
+src/components/ui/card.tsx(60,11): error TS2694: Namespace '"react"' has no exported member 'ComponentProps'.
+src/components/ui/card.tsx(68,11): error TS2694: Namespace '"react"' has no exported member 'ComponentProps'.
+src/components/ui/input.tsx(5,19): error TS2694: Namespace '"react"' has no exported member 'InputHTMLAttributes'.
+src/components/ui/input.tsx(8,8): error TS2339: Property 'className' does not exist on type 'InputProps'.
+src/components/ui/input.tsx(8,19): error TS2339: Property 'type' does not exist on type 'InputProps'.
+tests/App.test.tsx(78,42): error TS2604: JSX element type 'Outlet' does not have any construct or call signatures.
+tests/App.test.tsx(78,42): error TS2786: 'Outlet' cannot be used as a JSX component.
+  Its type 'unknown' is not a valid JSX element type.
+tests/App.test.tsx(94,14): error TS2786: 'MemoryRouter' cannot be used as a JSX component.
+  Its type '({ basename, children, initialEntries, initialIndex, }: MemoryRouterProps) => ReactElement' is not a valid JSX element type.
+    Type '({ basename, children, initialEntries, initialIndex, }: MemoryRouterProps) => ReactElement' is not assignable to type '(props: any, deprecatedLegacyContext?: any) => ReactNode'.
+      Type 'ReactElement' is not assignable to type 'ReactNode'.
