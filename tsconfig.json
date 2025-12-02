@@ -15,7 +15,10 @@
     "noImplicitReturns": false,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "typeRoots": ["./types", "./node_modules/@types"],
+    "typeRoots": [
+      "./types",
+      "./node_modules/@types"
+    ],
     "moduleResolution": "bundler",
     "isolatedModules": true,
     "moduleDetection": "force",
@@ -26,7 +29,7 @@
     "jsxImportSource": "react",
     "paths": {
       "@/*": [
-        "./*"
+        "./src/*"
       ]
     },
     "allowImportingTsExtensions": true,
