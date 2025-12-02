@@ -366,12 +366,24 @@
 		display: none;
 	}
 
-	/* Text balance for better typography */
+	/* Text balance for better typography (with fallback) */
 	.text-balance {
-		text-wrap: balance;
+		text-wrap: pretty; /* Fallback for older browsers */
 	}
 
-	/* Truncate with ellipsis for multiple lines */
+	@supports (text-wrap: balance) {
+		.text-balance {
+			text-wrap: balance;
+		}
+	}
+
+	/* Truncate with ellipsis for multiple lines - base styles */
+	.line-clamp-base {
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+
 	.line-clamp-2 {
 		display: -webkit-box;
 		-webkit-line-clamp: 2;
@@ -400,8 +412,13 @@
 		padding-bottom: env(safe-area-inset-bottom);
 	}
 
-	/* GPU acceleration for animations */
+	/* GPU acceleration hint - use sparingly on animated elements only */
 	.gpu {
+		transform: translateZ(0);
+	}
+
+	/* Apply will-change only during active animations to avoid performance overhead */
+	.gpu-active {
 		transform: translateZ(0);
 		will-change: transform;
 	}
