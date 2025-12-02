@@ -18,34 +18,36 @@ export interface GrokImageResponse {
 
 // Get xAI API key from environment
 export function getGrokApiKey(): string | undefined {
-    if (typeof window !== 'undefined') {
-        return window.localStorage?.getItem('VITE_XAI_API_KEY') ?? undefined;
-    }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const envAny = import.meta as any;
-    return envAny?.env?.VITE_XAI_API_KEY as string | undefined;
+    const viteVal = envAny?.env?.VITE_XAI_API_KEY as string | undefined;
+    // runtime overrides
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const winVal = typeof window !== 'undefined' ? (window as any)?.VITE_XAI_API_KEY as (string | undefined) : undefined;
+    const lsVal = typeof window !== 'undefined' ? window.localStorage?.getItem('VITE_XAI_API_KEY') ?? undefined : undefined;
+    return viteVal || winVal || lsVal;
 }
 
 // Get xAI base URL from environment
 export function getGrokBaseUrl(): string {
-    if (typeof window !== 'undefined') {
-        const stored = window.localStorage?.getItem('VITE_XAI_BASE_URL');
-        if (stored) return stored;
-    }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const envAny = import.meta as any;
-    return (envAny?.env?.VITE_XAI_BASE_URL as string) || 'https://api.x.ai';
+    const viteVal = envAny?.env?.VITE_XAI_BASE_URL as string | undefined;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const winVal = typeof window !== 'undefined' ? (window as any)?.VITE_XAI_BASE_URL as (string | undefined) : undefined;
+    const lsVal = typeof window !== 'undefined' ? window.localStorage?.getItem('VITE_XAI_BASE_URL') ?? undefined : undefined;
+    return viteVal || winVal || lsVal || 'https://api.x.ai';
 }
 
 // Get default image model
 export function getGrokImageModel(): string {
-    if (typeof window !== 'undefined') {
-        const stored = window.localStorage?.getItem('VITE_XAI_IMAGE_MODEL');
-        if (stored) return stored;
-    }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const envAny = import.meta as any;
-    return (envAny?.env?.VITE_XAI_IMAGE_MODEL as string) || 'grok-2-image-1212';
+    const viteVal = envAny?.env?.VITE_XAI_IMAGE_MODEL as string | undefined;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const winVal = typeof window !== 'undefined' ? (window as any)?.VITE_XAI_IMAGE_MODEL as (string | undefined) : undefined;
+    const lsVal = typeof window !== 'undefined' ? window.localStorage?.getItem('VITE_XAI_IMAGE_MODEL') ?? undefined : undefined;
+    return viteVal || winVal || lsVal || 'grok-2-image-1212';
 }
 
 // Check if Grok is properly configured
@@ -60,7 +62,7 @@ export async function generateGrokImage(options: GrokImageOptions): Promise<Grok
         return { success: false, error: 'xAI API key not configured' };
     }
 
-    const baseUrl = getGrokBaseUrl();
+    const baseUrl = getGrokBaseUrl().replace(/\/v1\/?$/, ''); // Strip trailing /v1 if present
     const model = options.model || getGrokImageModel();
     const url = `${baseUrl}/v1/images/generations`;
 

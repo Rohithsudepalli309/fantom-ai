@@ -293,14 +293,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Attempt to load session on mount
   useEffect(() => {
     const s = getSession();
-    if (s) {
-      setUser(s);
-    } else {
-      // TEMP: Auto-login for testing
-      const testUser = { uid: 'test-user', email: 'test@example.com' };
-      setUser(testUser);
-      localStorage.setItem('auth_session', JSON.stringify(testUser));
-    }
+    setUser(s);
     setLoading(false);
     // Sync with JWT backend cookie session if configured
     try {

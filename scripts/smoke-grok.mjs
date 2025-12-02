@@ -27,8 +27,11 @@ if (!key) {
 
 async function testGrok() {
     console.log('Testing Grok Image Generation...');
-    const url = 'https://api.x.ai/v1/images/generations';
+    const baseUrl = (process.env.VITE_XAI_BASE_URL || 'https://api.x.ai').replace(/\/v1\/?$/, '');
+    const url = `${baseUrl}/v1/images/generations`;
+    const model = process.env.VITE_XAI_IMAGE_MODEL || 'grok-2-image-1212';
     console.log('Fetching:', url);
+    console.log('Model:', model);
 
     try {
         const resp = await fetch(url, {
