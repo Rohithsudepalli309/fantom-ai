@@ -88,12 +88,12 @@ const Home: React.FC = () => {
     const grokConfigured = isGrokConfigured();
 
     // Activity stats
+    const ACTIVITY_LIMIT = 50;
     const [recentActivity, setRecentActivity] = useState<ActivityRecord[]>([]);
     const [activityStats, setActivityStats] = useState({
         chatMessages: 0,
         imagesGenerated: 0,
-        visionQueries: 0,
-        textGenerations: 0
+        visionQueries: 0
     });
 
     useEffect(() => {
@@ -101,19 +101,22 @@ const Home: React.FC = () => {
             if (!user?.uid) return;
             try {
                 const provider = await getStorageProvider();
-                const activities = await provider.listActivities(user.uid, 50);
+                const activities = await provider.listActivities(user.uid, ACTIVITY_LIMIT);
                 setRecentActivity(activities);
 
-                // Calculate stats from recent activity
-                const stats = {
-                    chatMessages: activities.filter(a => a.type === 'chat.message').length,
-                    imagesGenerated: activities.filter(a => a.type === 'image.generate').length,
-                    visionQueries: activities.filter(a => a.type === 'vision.query').length,
-                    textGenerations: 0 // Not tracked in current activity types
-                };
+                // Calculate all stats in a single pass through the activities array
+                const stats = activities.reduce(
+                    (acc, activity) => {
+                        if (activity.type === 'chat.message') acc.chatMessages++;
+                        else if (activity.type === 'image.generate') acc.imagesGenerated++;
+                        else if (activity.type === 'vision.query') acc.visionQueries++;
+                        return acc;
+                    },
+                    { chatMessages: 0, imagesGenerated: 0, visionQueries: 0 }
+                );
                 setActivityStats(stats);
             } catch (e) {
-                console.warn('Failed to load activity stats:', e);
+                console.warn('Failed to load activity stats. User may have no activity yet or storage is unavailable.', e);
             }
         };
         loadActivity();
@@ -173,7 +176,7 @@ const Home: React.FC = () => {
                                 View All →
                             </button>
                         </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-3 gap-4">
                             <div className="text-center p-3 rounded-lg bg-muted/50">
                                 <ChatIcon className="w-5 h-5 mx-auto mb-1 text-blue-500" />
                                 <div className="text-xl font-bold">{activityStats.chatMessages}</div>
@@ -188,11 +191,6 @@ const Home: React.FC = () => {
                                 <VisionIcon className="w-5 h-5 mx-auto mb-1 text-green-500" />
                                 <div className="text-xl font-bold">{activityStats.visionQueries}</div>
                                 <div className="text-xs text-muted-foreground">Vision Queries</div>
-                            </div>
-                            <div className="text-center p-3 rounded-lg bg-muted/50">
-                                <TextIcon className="w-5 h-5 mx-auto mb-1 text-amber-500" />
-                                <div className="text-xl font-bold">{activityStats.textGenerations}</div>
-                                <div className="text-xs text-muted-foreground">Text Generated</div>
                             </div>
                         </div>
                     </CardContent>
