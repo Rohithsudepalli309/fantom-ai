@@ -17,6 +17,7 @@ const Vision = React.lazy(() => import('./components/Vision'));
 const SystemStatus = React.lazy(() => import('./components/SystemStatus'));
 const ActivityViewer = React.lazy(() => import('./components/ActivityViewer'));
 const Settings = React.lazy(() => import('./components/Settings'));
+const Profile = React.lazy(() => import('./pages/Profile'));
 
 const AnimatedRoutes: React.FC = () => {
     const location = useLocation();
@@ -71,6 +72,13 @@ const AnimatedRoutes: React.FC = () => {
                         <PageTransition>
                             <React.Suspense fallback={<LazyFallback label="Settings" />}>
                                 <Settings />
+                            </React.Suspense>
+                        </PageTransition>
+                    } />
+                    <Route path="profile" element={
+                        <PageTransition>
+                            <React.Suspense fallback={<LazyFallback label="Profile" />}>
+                                <Profile />
                             </React.Suspense>
                         </PageTransition>
                     } />

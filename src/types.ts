@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type Feature = 'text' | 'chat' | 'image' | 'vision' | 'status' | 'settings' | 'activity';
+export type Feature = 'text' | 'chat' | 'image' | 'vision' | 'status' | 'settings' | 'activity' | 'profile';
 export type TextModel = 'nvidia/nemotron-nano-12b-v2-vl';
 export type ImageModel =
   | 'stabilityai/stable-diffusion-xl-base-1.0'

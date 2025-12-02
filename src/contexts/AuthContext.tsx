@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { recordActivitySafe } from '@/services/storageService';
+import { authenticatedFetch } from '@/lib/api';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 type AuthUser = {
@@ -244,6 +245,7 @@ function getBackend(): AuthBackend {
         // The current AuthContext uses 'auth_session' for user info. 
         // We should probably store the token separately or include it in auth_session.
         // For simplicity, let's store it in a separate key 'auth_token'
+        console.log('Login successful. Storing token in localStorage:', token.substring(0, 20) + '...');
         localStorage.setItem('auth_token', token);
 
         const uid = profile.id || 'jwt_' + Math.random().toString(36).slice(2); // Profile might not return ID, use fallback or decode token
@@ -310,6 +312,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const allowSignup = (envAny?.env?.VITE_AUTH_ALLOW_SIGNUP ?? 'true') !== 'false';
   const idleMinutes = Number(envAny?.env?.VITE_AUTH_IDLE_TIMEOUT_MIN || '');
 
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      console.log('Session expired or invalid token. Logging out...');
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_session');
+      setUser(null);
+    };
+
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
+  }, []);
+
   // Attempt to load session on mount
   useEffect(() => {
     const s = getSession();
@@ -325,13 +339,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const token = localStorage.getItem('auth_token');
             if (!token) return;
 
-            const r = await fetch('/api/profile', {
-              method: 'GET',
-              headers: { 'Authorization': `Bearer ${token}` }
+            console.log('Found persisted token in localStorage, validating...');
+
+            const r = await authenticatedFetch('/api/profile', {
+              method: 'GET'
             });
 
             if (!r.ok) {
               // Token invalid or expired
+              // The authenticatedFetch helper will dispatch the event, but we handle it here too for initial load
               localStorage.removeItem('auth_token');
               localStorage.removeItem('auth_session');
               setUser(null);
