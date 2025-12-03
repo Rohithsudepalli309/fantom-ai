@@ -16,7 +16,7 @@ const Home: React.FC = () => {
             </div>
             <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">Welcome to FANTOM AI</h1>
             <p className="text-lg text-muted-foreground mb-12 max-w-2xl">
-                Your creative partner powered by NVIDIA Nemotron Nano 12B 2 VL. Select a feature to get started.
+                Select a feature to get started.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-5xl">

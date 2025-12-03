@@ -25,7 +25,7 @@ export async function generateNemotronVideoByUrl(prompt: string, videoUrl: strin
     });
     if (!resp.ok) {
       const t = await resp.text();
-      return { success: false, error: `Nemotron video error (${resp.status}): ${t.slice(0,180)}` };
+      return { success: false, error: `Nemotron video error (${resp.status}): ${t.slice(0, 180)}` };
     }
     const data = await resp.json();
     const text = data?.choices?.[0]?.message?.content || data?.result || data?.description || data?.text || '(empty response)';
@@ -37,6 +37,7 @@ export async function generateNemotronVideoByUrl(prompt: string, videoUrl: strin
 // NVIDIA Nemotron Nano 12B 2 VL integration stubs
 // Provides text + vision (image understanding) only. Image generation/video are unsupported and will fallback.
 import { TextGenerationResponse, VisionResponse, ChatMessage } from '../types';
+import { authenticatedFetch } from '../lib/api';
 
 function getNemotronApiKey(): string | undefined {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -99,21 +100,20 @@ export async function generateNemotronText(prompt: string, systemInstruction: st
       max_tokens: getNumberOverride('VITE_NEMOTRON_MAX_TOKENS', 1024),
       stream: false
     } as any;
-    const resp = await fetch(`${base}/v1/chat/completions`, {
+    // Use backend proxy
+    const response = await authenticatedFetch('/api/chat', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${key}`,
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
-    if (!resp.ok) {
-      const t = await resp.text();
-      return { success: false, error: `Nemotron error (${resp.status}): ${t.slice(0,180)}` };
+
+    if (!response.ok) {
+      const t = await response.text();
+      return { success: false, error: `Backend error (${response.status}): ${t}` };
     }
-    const data = await resp.json();
+    const data = await response.json();
     // Attempt common response field extraction
-    const text = data?.choices?.[0]?.message?.content || data?.text || JSON.stringify(data).slice(0,320);
+    const text = data?.choices?.[0]?.message?.content || data?.text || JSON.stringify(data).slice(0, 320);
     return { success: true, text, sources: [] };
   } catch (e) {
     return { success: false, error: (e as Error).message };
@@ -131,27 +131,28 @@ export async function generateNemotronVision(prompt: string, imageBase64: string
     const body = {
       model,
       messages: [
-        { role: 'user', content: [
-          { type: 'text', text: prompt },
-          { type: 'image_url', image_url: { url: dataUrl } }
-        ]}
+        {
+          role: 'user', content: [
+            { type: 'text', text: prompt },
+            { type: 'image_url', image_url: { url: dataUrl } }
+          ]
+        }
       ],
       max_tokens: getNumberOverride('VITE_NEMOTRON_VISION_MAX_TOKENS', 800),
       stream: false
     } as any;
-    const resp = await fetch(`${base}/v1/chat/completions`, {
+    // Use backend proxy
+    const response = await authenticatedFetch('/api/vision', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${key}`,
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
-    if (!resp.ok) {
-      const t = await resp.text();
-      return { success: false, error: `Nemotron vision error (${resp.status}): ${t.slice(0,180)}` };
+
+    if (!response.ok) {
+      const t = await response.text();
+      return { success: false, error: `Backend error (${response.status}): ${t}` };
     }
-    const data = await resp.json();
+    const data = await response.json();
     const text = data?.choices?.[0]?.message?.content || data?.result || data?.description || data?.text || '(empty response)';
     return { success: true, text };
   } catch (e) {
@@ -169,10 +170,12 @@ export async function generateNemotronVisionByUrl(prompt: string, imageUrl: stri
     const body = {
       model,
       messages: [
-        { role: 'user', content: [
-          { type: 'text', text: prompt },
-          { type: 'image_url', image_url: { url: imageUrl } }
-        ]}
+        {
+          role: 'user', content: [
+            { type: 'text', text: prompt },
+            { type: 'image_url', image_url: { url: imageUrl } }
+          ]
+        }
       ],
       max_tokens: getNumberOverride('VITE_NEMOTRON_VISION_MAX_TOKENS', 800),
       stream: false
@@ -187,7 +190,7 @@ export async function generateNemotronVisionByUrl(prompt: string, imageUrl: stri
     });
     if (!resp.ok) {
       const t = await resp.text();
-      return { success: false, error: `Nemotron vision error (${resp.status}): ${t.slice(0,180)}` };
+      return { success: false, error: `Nemotron vision error (${resp.status}): ${t.slice(0, 180)}` };
     }
     const data = await resp.json();
     const text = data?.choices?.[0]?.message?.content || data?.result || data?.description || data?.text || '(empty response)';
@@ -206,8 +209,7 @@ export function unsupportedImageGeneration(): TextGenerationResponse {
 }
 
 // Lightweight health check for Nemotron: verifies key presence and attempts a tiny request.
-export async function checkNemotronHealth(): Promise<{ ok: boolean; message: string }>
-{
+export async function checkNemotronHealth(): Promise<{ ok: boolean; message: string }> {
   if (!isNemotronConfigured()) {
     return { ok: false, message: 'Nemotron key not configured' };
   }
@@ -252,7 +254,7 @@ export async function generateNemotronImage(opts: {
   prompt: string;
   width: number; height: number; steps: number; cfgScale: number;
   negativePrompt?: string; format: string;
-}): Promise<{ success: boolean; url?: string; error?: string }>{
+}): Promise<{ success: boolean; url?: string; error?: string }> {
   const key = getNemotronApiKey();
   if (!key) return { success: false, error: 'Nemotron API key missing (set VITE_NVIDIA_API_KEY).' };
   const url = getNvidiaImageUrl();
@@ -267,7 +269,7 @@ export async function generateNemotronImage(opts: {
       response_format: 'b64_json',
     };
     const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` }, body: JSON.stringify(body) });
-    if (!resp.ok) { const t = await resp.text(); return { success: false, error: `NVIDIA image error (${resp.status}): ${t.slice(0,180)}` }; }
+    if (!resp.ok) { const t = await resp.text(); return { success: false, error: `NVIDIA image error (${resp.status}): ${t.slice(0, 180)}` }; }
     const data = await resp.json();
     // Try common fields
     const imageUrl: string | undefined = data?.data?.[0]?.url || data?.url || data?.image_url;
@@ -278,14 +280,14 @@ export async function generateNemotronImage(opts: {
   } catch (e) { return { success: false, error: (e as Error).message }; }
 }
 
-export async function generateNemotronVideo(opts: { prompt: string; durationSec?: number; width?: number; height?: number }): Promise<{ success: boolean; url?: string; error?: string }>{
+export async function generateNemotronVideo(opts: { prompt: string; durationSec?: number; width?: number; height?: number }): Promise<{ success: boolean; url?: string; error?: string }> {
   const key = getNemotronApiKey();
   if (!key) return { success: false, error: 'Nemotron API key missing (set VITE_NVIDIA_API_KEY).' };
   const url = getNvidiaVideoUrl();
   try {
     const body: any = { model: getNemotronModel(), prompt: opts.prompt, duration: opts.durationSec, width: opts.width, height: opts.height, fps: 24, num_frames: undefined };
     const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` }, body: JSON.stringify(body) });
-    if (!resp.ok) { const t = await resp.text(); return { success: false, error: `NVIDIA video error (${resp.status}): ${t.slice(0,180)}` }; }
+    if (!resp.ok) { const t = await resp.text(); return { success: false, error: `NVIDIA video error (${resp.status}): ${t.slice(0, 180)}` }; }
     const data = await resp.json();
     const videoUrl: string | undefined = data?.data?.[0]?.url || data?.url || data?.video_url;
     if (videoUrl) return { success: true, url: videoUrl };
@@ -294,122 +296,17 @@ export async function generateNemotronVideo(opts: { prompt: string; durationSec?
 }
 
 // ---- Health checks for NVIDIA image/video endpoints ----
-export async function checkNvidiaImageHealth(): Promise<{ ok: boolean; message: string }>{
-  const key = getNemotronApiKey();
-  if (!key) return { ok: false, message: 'Nemotron key not configured' };
-  const url = getNvidiaImageUrl();
-  try {
-    const body: any = {
-      model: getNemotronModel(),
-      prompt: 'ping',
-      size: '256x256',
-      steps: 1,
-      guidance: 1,
-      response_format: 'b64_json'
-    };
-    const resp = await fetch(url!, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` }, body: JSON.stringify(body) });
-    if (!resp.ok) {
-      const t = await resp.text();
-      return { ok: false, message: `Image endpoint responded ${resp.status}: ${t.slice(0, 160)}` };
-    }
-    return { ok: true, message: 'NVIDIA image endpoint reachable' };
-  } catch (e) {
-    return { ok: false, message: (e as Error).message };
-  }
+export async function checkNvidiaImageHealth(): Promise<{ ok: boolean; message: string }> {
+  return { ok: false, message: 'Image health check disabled (proxy not implemented)' };
 }
 
-export async function checkNvidiaVideoHealth(): Promise<{ ok: boolean; message: string }>{
-  const key = getNemotronApiKey();
-  if (!key) return { ok: false, message: 'Nemotron key not configured' };
-  const url = getNvidiaVideoUrl();
-  try {
-    const body: any = { model: getNemotronModel(), prompt: 'ping', duration: 1, width: 320, height: 240, fps: 4 };
-    const resp = await fetch(url!, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` }, body: JSON.stringify(body) });
-    if (!resp.ok) {
-      const t = await resp.text();
-      return { ok: false, message: `Video endpoint responded ${resp.status}: ${t.slice(0, 160)}` };
-    }
-    return { ok: true, message: 'NVIDIA video endpoint reachable' };
-  } catch (e) {
-    return { ok: false, message: (e as Error).message };
-  }
+export async function checkNvidiaVideoHealth(): Promise<{ ok: boolean; message: string }> {
+  return { ok: false, message: 'Video health check disabled (proxy not implemented)' };
 }
 
 // ---- Streaming chat for Nemotron (SSE/NDJSON tolerant) ----
 export async function* streamNemotronChat(history: ChatMessage[], message: string, temperature: number): AsyncGenerator<TextGenerationResponse> {
-  const key = getNemotronApiKey();
-  if (!key) { yield missingKeyResponse(); return; }
-  const base = getNemotronBase();
-  const model = getNemotronModel();
-  // Convert app history to assistant/user message roles
-  const msgs: any[] = [];
-  for (const m of history) {
-    const role = m.role === 'model' ? 'assistant' : 'user';
-    msgs.push({ role, content: m.content });
-  }
-  msgs.push({ role: 'user', content: message });
-  const body: any = {
-    model,
-    messages: msgs,
-    temperature,
-    max_tokens: getNumberOverride('VITE_NEMOTRON_MAX_TOKENS', 1024),
-    stream: true
-  };
-  const url = `${base}/v1/chat/completions`;
-  try {
-    const resp = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-      body: JSON.stringify(body)
-    });
-    if (!resp.ok) {
-      const t = await resp.text();
-      yield { success: false, error: `Nemotron stream error (${resp.status}): ${t.slice(0,180)}` };
-      return;
-    }
-    const reader = resp.body?.getReader();
-    if (!reader) {
-      const t = await resp.text();
-      yield { success: true, text: t, sources: [] };
-      return;
-    }
-    const decoder = new TextDecoder();
-    let buffer = '';
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      // Process line by line for SSE or NDJSON
-      let idx;
-      while ((idx = buffer.indexOf('\n')) !== -1) {
-        const line = buffer.slice(0, idx).trim();
-        buffer = buffer.slice(idx + 1);
-        if (!line) continue;
-        let payload = line;
-        if (payload.startsWith('data:')) payload = payload.slice(5).trim();
-        if (!payload) continue;
-        if (payload === '[DONE]') { return; }
-        try {
-          const json = JSON.parse(payload);
-          const choice = json?.choices?.[0];
-          const delta = choice?.delta?.content ?? choice?.message?.content ?? choice?.text ?? json?.text ?? '';
-          if (delta) {
-            yield { success: true, text: String(delta), sources: [] };
-          }
-        } catch {
-          // Not JSON; as a fallback, yield raw text if it looks like text
-          if (/^[\x20-\x7E\t]+$/.test(payload)) {
-            yield { success: true, text: payload, sources: [] };
-          }
-        }
-      }
-    }
-    // Flush any tail content as non-JSON
-    const tail = buffer.trim();
-    if (tail) {
-      yield { success: true, text: tail, sources: [] };
-    }
-  } catch (e) {
-    yield { success: false, error: (e as Error).message };
-  }
+  // Fallback to non-streaming proxy for now
+  const response = await generateNemotronText(message, undefined, temperature);
+  yield response;
 }

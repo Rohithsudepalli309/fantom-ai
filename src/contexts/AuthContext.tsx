@@ -85,13 +85,13 @@ function getBackend(): AuthBackend {
   // Helper to read env
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const envAny = import.meta as any;
-  const getEnv = (k: string) => envAny?.env?.[k];
-  const providerRaw = String(getEnv('VITE_AUTH_PROVIDER') || 'auto').toLowerCase();
+  const getEnv = (k: string) => envAny?.env?.[k] || import.meta.env[k];
+  const providerRaw = 'jwt'; // FORCE JWT FOR DEBUGGING
   const hasSupabase = !!(getEnv('VITE_SUPABASE_URL') && getEnv('VITE_SUPABASE_ANON_KEY'));
   const hasFirebase = !!(getEnv('VITE_FIREBASE_API_KEY') && getEnv('VITE_FIREBASE_AUTH_DOMAIN') && getEnv('VITE_FIREBASE_PROJECT_ID') && getEnv('VITE_FIREBASE_APP_ID'));
-  const provider = providerRaw === 'auto'
-    ? (hasSupabase ? 'supabase' : (hasFirebase ? 'firebase' : 'local'))
-    : providerRaw;
+  const provider = 'jwt'; // FORCE JWT
+
+  console.log(`[AuthContext] ProviderRaw: ${providerRaw}, Selected: ${provider}`);
 
   // Local backend (default)
   const localBackend: AuthBackend = {

@@ -9,8 +9,19 @@ const app = express();
 app.use(express.json());
 app.use(cors()); // Enable CORS
 
+// Debug logging middleware
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  console.log('Authorization Header:', req.headers.authorization);
+  next();
+});
+
 const uri = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/testdb";
 const client = new MongoClient(uri);
+
+// Secret key for JWT (use env variable in production!)
+const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
+console.log("JWT_SECRET used:", JWT_SECRET === "supersecretkey" ? "default (supersecretkey)" : "from env");
 
 let usersCollection;
 
@@ -25,9 +36,6 @@ async function connectDB() {
   }
 }
 connectDB();
-
-// Secret key for JWT (use env variable in production!)
-const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
 
 // Middleware to authenticate token
 const authenticateToken = (req, res, next) => {
@@ -130,6 +138,103 @@ app.put("/api/user", authenticateToken, async (req, res) => {
     res.json({ message: "Password updated successfully" });
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// --- AI Proxy Routes ---
+
+// Chat Proxy (NVIDIA Nemotron)
+app.post("/api/chat", authenticateToken, async (req, res) => {
+  try {
+    const NVIDIA_KEY = process.env.VITE_NVIDIA_API_KEY;
+    const NVIDIA_BASE = process.env.VITE_NVIDIA_BASE_URL || "https://integrate.api.nvidia.com";
+
+    if (!NVIDIA_KEY) return res.status(500).json({ error: "NVIDIA API key not configured" });
+
+    const response = await fetch(`${NVIDIA_BASE}/v1/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${NVIDIA_KEY}`
+      },
+      body: JSON.stringify(req.body)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return res.status(response.status).json({ error: `NVIDIA API error: ${errorText}` });
+    }
+
+    const data = await response.json();
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Vision Proxy (NVIDIA Nemotron)
+app.post("/api/vision", authenticateToken, async (req, res) => {
+  try {
+    const NVIDIA_KEY = process.env.VITE_NVIDIA_API_KEY;
+    const NVIDIA_BASE = process.env.VITE_NVIDIA_BASE_URL || "https://integrate.api.nvidia.com";
+
+    if (!NVIDIA_KEY) return res.status(500).json({ error: "NVIDIA API key not configured" });
+
+    const response = await fetch(`${NVIDIA_BASE}/v1/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${NVIDIA_KEY}`
+      },
+      body: JSON.stringify(req.body)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return res.status(response.status).json({ error: `NVIDIA API error: ${errorText}` });
+    }
+
+    const data = await response.json();
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Image Proxy (xAI via OpenRouter)
+app.post("/api/image", authenticateToken, async (req, res) => {
+  try {
+    const XAI_KEY = process.env.VITE_XAI_API_KEY;
+    const XAI_BASE = process.env.VITE_XAI_BASE_URL || "https://openrouter.ai/api/v1";
+
+    if (!XAI_KEY) return res.status(500).json({ error: "xAI API key not configured" });
+
+    // Ensure model is OpenRouter compatible if using OpenRouter
+    const body = req.body;
+    if (XAI_BASE.includes("openrouter") && !body.model.startsWith("xai/")) {
+      // Fallback/Correction for OpenRouter model names if needed
+      // But frontend service should ideally send the right one.
+      // We'll trust the frontend for now, or the user can configure VITE_XAI_IMAGE_MODEL
+    }
+
+    const response = await fetch(`${XAI_BASE}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${XAI_KEY}`
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return res.status(response.status).json({ error: `xAI API error: ${errorText}` });
+    }
+
+    const data = await response.json();
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
 });
 
