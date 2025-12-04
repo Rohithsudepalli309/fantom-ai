@@ -71,13 +71,38 @@ function createLocalProvider(): StorageProvider {
   };
 }
 
+// Mongo provider (via backend API)
+function createMongoProvider(): StorageProvider {
+  return {
+    async recordActivity(rec: ActivityRecord) {
+      const { authenticatedFetch } = await import('@/lib/api');
+      const resp = await authenticatedFetch('/api/activity', {
+        method: 'POST',
+        body: JSON.stringify({ type: rec.type, data: rec.data, timestamp: rec.timestamp })
+      });
+      if (!resp.ok) throw new Error(`Failed to record activity: ${resp.statusText}`);
+    },
+    async listActivities(userId: string, limit = 50) {
+      const { authenticatedFetch } = await import('@/lib/api');
+      const resp = await authenticatedFetch(`/api/activity?limit=${limit}`);
+      if (!resp.ok) throw new Error(`Failed to list activities: ${resp.statusText}`);
+      const data = await resp.json();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return data.map((r: any) => ({
+        id: r._id,
+        userId: r.userId,
+        type: r.type,
+        timestamp: r.timestamp,
+        data: r.data
+      }));
+    }
+  };
+}
+
 export async function getStorageProvider(): Promise<StorageProvider> {
   if (_provider) return _provider;
-  try {
-    _provider = await createSupabaseProvider();
-  } catch {
-    _provider = createLocalProvider();
-  }
+  // Default to Mongo provider for persistence
+  _provider = createMongoProvider();
   return _provider;
 }
 

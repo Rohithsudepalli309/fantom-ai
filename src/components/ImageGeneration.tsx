@@ -21,7 +21,7 @@ interface ImageGenerationState {
 
 const initialState: ImageGenerationState = {
     prompt: '',
-    model: 'nvidia/nemotron-nano-12b-v2-vl', // Default to Nemotron
+    model: 'nvidia/nemotron-nano-12b-v2-vl', // Default to NVIDIA
     style: 'none',
     aspectRatio: '1:1',
     format: 'png',

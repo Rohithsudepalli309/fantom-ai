@@ -28,7 +28,7 @@ interface LocalTextGenerationState {
 const initialState: LocalTextGenerationState = {
     prompt: '',
     systemPrompt: '',
-    model: 'nvidia/nemotron-nano-12b-v2-vl', // Default to Nemotron
+    model: 'nvidia/nemotron-nano-12b-v2-vl', // Default to NVIDIA
     tone: 'casual',
     length: 'medium',
     isJsonMode: false,

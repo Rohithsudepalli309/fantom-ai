@@ -24,12 +24,14 @@ const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
 console.log("JWT_SECRET used:", JWT_SECRET === "supersecretkey" ? "default (supersecretkey)" : "from env");
 
 let usersCollection;
+let activitiesCollection;
 
 async function connectDB() {
   try {
     await client.connect();
     const db = client.db("testdb");
     usersCollection = db.collection("users");
+    activitiesCollection = db.collection("activities");
     console.log("Connected to MongoDB");
   } catch (e) {
     console.error("MongoDB connection error:", e);
@@ -50,6 +52,44 @@ const authenticateToken = (req, res, next) => {
     next();
   });
 };
+
+// --- Activity Routes ---
+
+// Record Activity
+app.post("/api/activity", authenticateToken, async (req, res) => {
+  try {
+    const { type, data, timestamp } = req.body;
+    if (!type) return res.status(400).json({ error: "Activity type required" });
+
+    const activity = {
+      userId: req.user.userId,
+      type,
+      data: data || {},
+      timestamp: timestamp || new Date().toISOString()
+    };
+
+    const result = await activitiesCollection.insertOne(activity);
+    res.json({ insertedId: result.insertedId });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Get Activities
+app.get("/api/activity", authenticateToken, async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 50;
+    const activities = await activitiesCollection
+      .find({ userId: req.user.userId })
+      .sort({ timestamp: -1 })
+      .limit(limit)
+      .toArray();
+
+    res.json(activities);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
 
 // Health Check with DB Latency
 app.get("/api/health", async (req, res) => {

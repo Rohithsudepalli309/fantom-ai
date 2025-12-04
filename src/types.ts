@@ -86,7 +86,7 @@ export type JsonGenerationResponse = JsonGenerationSuccess | JsonGenerationError
 export interface ImageGenerationSuccess extends BaseResponse {
   success: true;
   url: string;
-  provider?: 'local-sd' | 'stability' | 'nemotron' | 'huggingface' | 'grok';
+  provider?: 'local-sd' | 'stability' | 'nvidia' | 'huggingface' | 'grok';
   note?: string; // optional informational note (e.g., fallback reason)
 }
 export interface ImageGenerationError extends BaseResponse {

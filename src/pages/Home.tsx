@@ -30,7 +30,7 @@ const Home: React.FC = () => {
                             <feature.icon className="w-12 h-12 mb-4 text-primary group-hover:text-primary/80 transition-colors" />
                             <h3 className="text-xl font-semibold mb-2">{feature.name}</h3>
                             <span className="inline-block mb-2 px-2 py-0.5 text-[10px] font-semibold rounded bg-primary/10 text-primary uppercase tracking-wide">
-                                Nemotron
+                                NVIDIA
                             </span>
                             {feature.description && (
                                 <p className="text-sm text-muted-foreground">{feature.description}</p>

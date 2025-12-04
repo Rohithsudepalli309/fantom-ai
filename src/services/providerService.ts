@@ -1,58 +1,58 @@
 // Unified provider selection for text/json/vision.
-import { generateNemotronText, generateNemotronVision, generateNemotronVisionByUrl, generateNemotronVideoByUrl, isNemotronConfigured, generateNemotronImage, generateNemotronVideo, streamNemotronChat } from './nemotronService';
+import { generateNvidiaText, generateNvidiaVision, generateNvidiaVisionByUrl, generateNvidiaVideoByUrl, isNvidiaConfigured, generateNvidiaImage, generateNvidiaVideo, streamNvidiaChat } from './nvidiaService';
 import { generateGrokImage, isGrokConfigured } from './grokService';
 import { TextGenerationResponse, JsonGenerationResponse, VisionResponse, TextModel, ChatMessage, AspectRatio, ImageFormat, ImageModel, ImageStyle, ImageGenerationResponse } from '../types';
 
-// Video analysis using a remote video URL; prefers Nemotron's native video_url support
+// Video analysis using a remote video URL; prefers NVIDIA's native video_url support
 export async function unifiedVideoByUrl(prompt: string, videoUrl: string, opts?: { fps?: number, maxTokens?: number }): Promise<{ success: boolean, text?: string, error?: string }> {
-  return generateNemotronVideoByUrl(prompt, videoUrl, opts);
+  return generateNvidiaVideoByUrl(prompt, videoUrl, opts);
 }
 
-function getProvider(): 'nemotron' {
-  return 'nemotron';
+function getProvider(): 'nvidia' {
+  return 'nvidia';
 }
 
 export async function unifiedGenerateText(prompt: string, model: TextModel, systemInstruction: string, temperature: number, useWebSearch: boolean): Promise<TextGenerationResponse> {
   if (useWebSearch) {
-    return { success: false, error: 'Web search not implemented for Nemotron.' };
+    return { success: false, error: 'Web search not implemented for NVIDIA.' };
   }
-  return generateNemotronText(prompt, systemInstruction, temperature);
+  return generateNvidiaText(prompt, systemInstruction, temperature);
 }
 
 export async function unifiedGenerateJson(prompt: string): Promise<JsonGenerationResponse> {
   // Attempt JSON via text then parse
-  const resp = await generateNemotronText(prompt + '\nReturn ONLY valid JSON.', undefined, 0.2);
+  const resp = await generateNvidiaText(prompt + '\nReturn ONLY valid JSON.', undefined, 0.2);
   if (!resp.success) return { success: false, error: resp.error, rawResponse: undefined } as JsonGenerationResponse;
   try {
     const json = JSON.parse(resp.text || '');
     return { success: true, json, rawResponse: resp.text || '' };
   } catch {
-    return { success: false, error: 'Nemotron did not return valid JSON', rawResponse: resp.text } as JsonGenerationResponse;
+    return { success: false, error: 'NVIDIA did not return valid JSON', rawResponse: resp.text } as JsonGenerationResponse;
   }
 }
 
 export async function unifiedVision(prompt: string, base64Data: string, mimeType: string): Promise<VisionResponse> {
-  return generateNemotronVision(prompt, base64Data, mimeType);
+  return generateNvidiaVision(prompt, base64Data, mimeType);
 }
 
-// Vision using a remote image URL; prefers Nemotron's native image_url support
+// Vision using a remote image URL; prefers NVIDIA's native image_url support
 export async function unifiedVisionByUrl(prompt: string, imageUrl: string): Promise<VisionResponse> {
-  return generateNemotronVisionByUrl(prompt, imageUrl);
+  return generateNvidiaVisionByUrl(prompt, imageUrl);
 }
 
 export function getActiveProvider(): string {
-  if (!isNemotronConfigured()) return 'nemotron (unconfigured)';
-  return 'nemotron';
+  if (!isNvidiaConfigured()) return 'nvidia (unconfigured)';
+  return 'nvidia';
 }
 
 // Unified chat streaming (history + new message). Returns an async generator.
 export async function* unifiedChatStream(history: ChatMessage[], message: string, model: TextModel, useWebSearch: boolean): AsyncGenerator<TextGenerationResponse> {
   if (useWebSearch) {
-    yield { success: false, error: 'Web search not implemented for Nemotron.' };
+    yield { success: false, error: 'Web search not implemented for NVIDIA.' };
     return;
   }
-  // Stream from Nemotron using SSE/NDJSON tolerant reader
-  for await (const chunk of streamNemotronChat(history, message, 0.7)) {
+  // Stream from NVIDIA using SSE/NDJSON tolerant reader
+  for await (const chunk of streamNvidiaChat(history, message, 0.7)) {
     yield chunk;
   }
 }
@@ -63,19 +63,19 @@ export async function* unifiedChatStreamWithProvider(
   message: string,
   model: TextModel,
   useWebSearch: boolean,
-  providerOverride: 'nemotron' | 'local'
+  providerOverride: 'nvidia' | 'local'
 ): AsyncGenerator<TextGenerationResponse> {
-  // Ignore override, force Nemotron
+  // Ignore override, force NVIDIA
   if (useWebSearch) {
-    yield { success: false, error: 'Web search not implemented for Nemotron.' };
+    yield { success: false, error: 'Web search not implemented for NVIDIA.' };
     return;
   }
-  for await (const chunk of streamNemotronChat(history, message, 0.7)) {
+  for await (const chunk of streamNvidiaChat(history, message, 0.7)) {
     yield chunk;
   }
 }
 
-// Unified image generation: prefer NVIDIA endpoints when provider=nemotron and URL configured, else fallback to Stability/local SD via geminiService
+// Unified image generation: prefer NVIDIA endpoints when provider=nvidia and URL configured, else fallback to Stability/local SD via geminiService
 export async function unifiedGenerateImage(
   prompt: string,
   style: ImageStyle,
@@ -84,7 +84,7 @@ export async function unifiedGenerateImage(
   format?: ImageFormat,
   advanced?: { width?: number; height?: number; steps?: number; guidance?: number; modelOverride?: string; negativePrompt?: string }
 ): Promise<ImageGenerationResponse> {
-  // Priority: Grok (if configured) > Nemotron (fallback)
+  // Priority: Grok (if configured) > NVIDIA (fallback)
 
   // Try Grok first if configured
   if (isGrokConfigured()) {
@@ -104,11 +104,11 @@ export async function unifiedGenerateImage(
         };
       }
     } catch (error) {
-      console.warn('Grok image generation failed, falling back to Nemotron:', error);
+      console.warn('Grok image generation failed, falling back to NVIDIA:', error);
     }
   }
 
-  // Fallback to Nemotron
+  // Fallback to NVIDIA
   const map = (ar: AspectRatio, w?: number, h?: number): { width: number; height: number } => {
     if (w && h) return { width: w, height: h };
     switch (ar) {
@@ -124,7 +124,7 @@ export async function unifiedGenerateImage(
     }
   };
   const wh = map(aspectRatio, advanced?.width, advanced?.height);
-  const res = await generateNemotronImage({
+  const res = await generateNvidiaImage({
     prompt,
     width: wh.width,
     height: wh.height,
@@ -134,13 +134,13 @@ export async function unifiedGenerateImage(
     format: format || 'png'
   });
   if (res.success && res.url) {
-    return { success: true, url: res.url, provider: 'nemotron' };
+    return { success: true, url: res.url, provider: 'nvidia' };
   }
   return { success: false, error: res.error || 'Image generation failed' };
 }
 
 export async function unifiedGenerateVideo(prompt: string, opts?: { durationSec?: number; width?: number; height?: number }): Promise<{ success: boolean; url?: string; error?: string }> {
-  const res = await generateNemotronVideo({ prompt, durationSec: opts?.durationSec, width: opts?.width, height: opts?.height });
+  const res = await generateNvidiaVideo({ prompt, durationSec: opts?.durationSec, width: opts?.width, height: opts?.height });
   if (res.success) return res;
-  return { success: false, error: res.error || 'Nemotron video not configured' };
+  return { success: false, error: res.error || 'NVIDIA video not configured' };
 }

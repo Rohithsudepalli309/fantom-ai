@@ -1,10 +1,10 @@
 // Video analysis via remote video URL (Nemotron schema)
-export async function generateNemotronVideoByUrl(prompt: string, videoUrl: string, opts?: { fps?: number, maxTokens?: number }): Promise<{ success: boolean, text?: string, error?: string }> {
-  const key = getNemotronApiKey();
-  if (!key) return { success: false, error: 'Nemotron API key missing (set VITE_NVIDIA_API_KEY).' };
+export async function generateNvidiaVideoByUrl(prompt: string, videoUrl: string, opts?: { fps?: number, maxTokens?: number }): Promise<{ success: boolean, text?: string, error?: string }> {
+  const key = getNvidiaApiKey();
+  if (!key) return { success: false, error: 'NVIDIA API key missing (set VITE_NVIDIA_API_KEY).' };
   try {
-    const base = getNemotronBase();
-    const model = getNemotronModel();
+    const base = getNvidiaBase();
+    const model = getNvidiaModel();
     const body = {
       model,
       type: 'video_url',
@@ -13,7 +13,7 @@ export async function generateNemotronVideoByUrl(prompt: string, videoUrl: strin
       messages: [
         { role: 'user', content: prompt }
       ],
-      max_tokens: opts?.maxTokens ?? getNumberOverride('VITE_NEMOTRON_MAX_TOKENS', 1024)
+      max_tokens: opts?.maxTokens ?? getNumberOverride('VITE_NVIDIA_MAX_TOKENS', 1024)
     };
     const resp = await fetch(`${base}/v1/chat/completions`, {
       method: 'POST',
@@ -25,7 +25,7 @@ export async function generateNemotronVideoByUrl(prompt: string, videoUrl: strin
     });
     if (!resp.ok) {
       const t = await resp.text();
-      return { success: false, error: `Nemotron video error (${resp.status}): ${t.slice(0, 180)}` };
+      return { success: false, error: `NVIDIA video error (${resp.status}): ${t.slice(0, 180)}` };
     }
     const data = await resp.json();
     const text = data?.choices?.[0]?.message?.content || data?.result || data?.description || data?.text || '(empty response)';
@@ -34,12 +34,12 @@ export async function generateNemotronVideoByUrl(prompt: string, videoUrl: strin
     return { success: false, error: (e as Error).message };
   }
 }
-// NVIDIA Nemotron Nano 12B 2 VL integration stubs
+// NVIDIA Nano 12B 2 VL integration stubs
 // Provides text + vision (image understanding) only. Image generation/video are unsupported and will fallback.
 import { TextGenerationResponse, VisionResponse, ChatMessage } from '../types';
 import { authenticatedFetch } from '../lib/api';
 
-function getNemotronApiKey(): string | undefined {
+function getNvidiaApiKey(): string | undefined {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const envAny = import.meta as any;
   const viteVal = envAny?.env?.VITE_NVIDIA_API_KEY as string | undefined;
@@ -50,7 +50,7 @@ function getNemotronApiKey(): string | undefined {
   return viteVal || winVal || lsVal;
 }
 
-function getNemotronBase(): string {
+function getNvidiaBase(): string {
   // Allow override, default placeholder
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const envAny = import.meta as any;
@@ -58,7 +58,7 @@ function getNemotronBase(): string {
   return base.replace(/\/$/, '');
 }
 
-function getNemotronModel(): string {
+function getNvidiaModel(): string {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const envAny = import.meta as any;
   const m = envAny?.env?.VITE_NVIDIA_MODEL || (typeof window !== 'undefined' ? (window as any)?.VITE_NVIDIA_MODEL : undefined) || 'nvidia/nemotron-nano-12b-v2-vl';
@@ -80,16 +80,16 @@ function getNumberOverride(name: string, fallback: number): number {
 }
 
 function missingKeyResponse(): TextGenerationResponse {
-  return { success: false, error: 'Nemotron API key missing (set VITE_NVIDIA_API_KEY).' };
+  return { success: false, error: 'NVIDIA API key missing (set VITE_NVIDIA_API_KEY).' };
 }
 
-export async function generateNemotronText(prompt: string, systemInstruction: string | undefined, temperature: number): Promise<TextGenerationResponse> {
-  const key = getNemotronApiKey();
+export async function generateNvidiaText(prompt: string, systemInstruction: string | undefined, temperature: number): Promise<TextGenerationResponse> {
+  const key = getNvidiaApiKey();
   if (!key) return missingKeyResponse();
   try {
-    const base = getNemotronBase();
-    const model = getNemotronModel();
-    // Align with Nemotron chat completion schema
+    const base = getNvidiaBase();
+    const model = getNvidiaModel();
+    // Align with NVIDIA chat completion schema
     const body = {
       model,
       messages: [
@@ -97,7 +97,7 @@ export async function generateNemotronText(prompt: string, systemInstruction: st
         { role: 'user', content: prompt }
       ],
       temperature,
-      max_tokens: getNumberOverride('VITE_NEMOTRON_MAX_TOKENS', 1024),
+      max_tokens: getNumberOverride('VITE_NVIDIA_MAX_TOKENS', 1024),
       stream: false
     } as any;
     // Use backend proxy
@@ -120,12 +120,12 @@ export async function generateNemotronText(prompt: string, systemInstruction: st
   }
 }
 
-export async function generateNemotronVision(prompt: string, imageBase64: string, mimeType: string): Promise<VisionResponse> {
-  const key = getNemotronApiKey();
-  if (!key) return { success: false, error: 'Nemotron API key missing (set VITE_NVIDIA_API_KEY).' };
+export async function generateNvidiaVision(prompt: string, imageBase64: string, mimeType: string): Promise<VisionResponse> {
+  const key = getNvidiaApiKey();
+  if (!key) return { success: false, error: 'NVIDIA API key missing (set VITE_NVIDIA_API_KEY).' };
   try {
-    const base = getNemotronBase();
-    const model = getNemotronModel();
+    const base = getNvidiaBase();
+    const model = getNvidiaModel();
     // Use chat completions with multi-part content (text + image via data URL)
     const dataUrl = `data:${mimeType};base64,${imageBase64}`;
     const body = {
@@ -138,7 +138,7 @@ export async function generateNemotronVision(prompt: string, imageBase64: string
           ]
         }
       ],
-      max_tokens: getNumberOverride('VITE_NEMOTRON_VISION_MAX_TOKENS', 800),
+      max_tokens: getNumberOverride('VITE_NVIDIA_VISION_MAX_TOKENS', 800),
       stream: false
     } as any;
     // Use backend proxy
@@ -161,12 +161,12 @@ export async function generateNemotronVision(prompt: string, imageBase64: string
 }
 
 // Vision via remote image URL (no base64 conversion required)
-export async function generateNemotronVisionByUrl(prompt: string, imageUrl: string): Promise<VisionResponse> {
-  const key = getNemotronApiKey();
-  if (!key) return { success: false, error: 'Nemotron API key missing (set VITE_NVIDIA_API_KEY).' };
+export async function generateNvidiaVisionByUrl(prompt: string, imageUrl: string): Promise<VisionResponse> {
+  const key = getNvidiaApiKey();
+  if (!key) return { success: false, error: 'NVIDIA API key missing (set VITE_NVIDIA_API_KEY).' };
   try {
-    const base = getNemotronBase();
-    const model = getNemotronModel();
+    const base = getNvidiaBase();
+    const model = getNvidiaModel();
     const body = {
       model,
       messages: [
@@ -177,7 +177,7 @@ export async function generateNemotronVisionByUrl(prompt: string, imageUrl: stri
           ]
         }
       ],
-      max_tokens: getNumberOverride('VITE_NEMOTRON_VISION_MAX_TOKENS', 800),
+      max_tokens: getNumberOverride('VITE_NVIDIA_VISION_MAX_TOKENS', 800),
       stream: false
     } as any;
     const resp = await fetch(`${base}/v1/chat/completions`, {
@@ -190,7 +190,7 @@ export async function generateNemotronVisionByUrl(prompt: string, imageUrl: stri
     });
     if (!resp.ok) {
       const t = await resp.text();
-      return { success: false, error: `Nemotron vision error (${resp.status}): ${t.slice(0, 180)}` };
+      return { success: false, error: `NVIDIA vision error (${resp.status}): ${t.slice(0, 180)}` };
     }
     const data = await resp.json();
     const text = data?.choices?.[0]?.message?.content || data?.result || data?.description || data?.text || '(empty response)';
@@ -200,25 +200,25 @@ export async function generateNemotronVisionByUrl(prompt: string, imageUrl: stri
   }
 }
 
-export function isNemotronConfigured(): boolean {
-  return !!getNemotronApiKey();
+export function isNvidiaConfigured(): boolean {
+  return !!getNvidiaApiKey();
 }
 
 export function unsupportedImageGeneration(): TextGenerationResponse {
-  return { success: false, error: 'Nemotron model does not support image generation. Using Stability / local SD instead.' };
+  return { success: false, error: 'NVIDIA model does not support image generation. Using Stability / local SD instead.' };
 }
 
-// Lightweight health check for Nemotron: verifies key presence and attempts a tiny request.
-export async function checkNemotronHealth(): Promise<{ ok: boolean; message: string }> {
-  if (!isNemotronConfigured()) {
-    return { ok: false, message: 'Nemotron key not configured' };
+// Lightweight health check for NVIDIA: verifies key presence and attempts a tiny request.
+export async function checkNvidiaHealth(): Promise<{ ok: boolean; message: string }> {
+  if (!isNvidiaConfigured()) {
+    return { ok: false, message: 'NVIDIA key not configured' };
   }
   try {
-    const resp = await generateNemotronText('ping', 'Health check: reply with "pong" only.', 0);
+    const resp = await generateNvidiaText('ping', 'Health check: reply with "pong" only.', 0);
     if (resp.success) {
-      return { ok: true, message: 'Nemotron reachable' };
+      return { ok: true, message: 'NVIDIA reachable' };
     }
-    return { ok: false, message: resp.error || 'Nemotron responded with error' };
+    return { ok: false, message: resp.error || 'NVIDIA responded with error' };
   } catch (e) {
     return { ok: false, message: (e as Error).message };
   }
@@ -234,7 +234,7 @@ function getNvidiaImageUrl(): string | undefined {
   const lsVal = typeof window !== 'undefined' ? window.localStorage?.getItem('VITE_NVIDIA_IMAGE_URL') ?? undefined : undefined;
   if (explicit || winVal || lsVal) return explicit || winVal || lsVal;
   // default to base images endpoint
-  const base = getNemotronBase();
+  const base = getNvidiaBase();
   return `${base}/v1/images/generations`;
 }
 
@@ -246,21 +246,21 @@ function getNvidiaVideoUrl(): string | undefined {
   const lsVal = typeof window !== 'undefined' ? window.localStorage?.getItem('VITE_NVIDIA_VIDEO_URL') ?? undefined : undefined;
   if (explicit || winVal || lsVal) return explicit || winVal || lsVal;
   // default to base video endpoint
-  const base = getNemotronBase();
+  const base = getNvidiaBase();
   return `${base}/v1/video/generations`;
 }
 
-export async function generateNemotronImage(opts: {
+export async function generateNvidiaImage(opts: {
   prompt: string;
   width: number; height: number; steps: number; cfgScale: number;
   negativePrompt?: string; format: string;
 }): Promise<{ success: boolean; url?: string; error?: string }> {
-  const key = getNemotronApiKey();
-  if (!key) return { success: false, error: 'Nemotron API key missing (set VITE_NVIDIA_API_KEY).' };
+  const key = getNvidiaApiKey();
+  if (!key) return { success: false, error: 'NVIDIA API key missing (set VITE_NVIDIA_API_KEY).' };
   const url = getNvidiaImageUrl();
   try {
     const body: any = {
-      model: getNemotronModel(),
+      model: getNvidiaModel(),
       prompt: opts.prompt,
       size: `${opts.width}x${opts.height}`,
       steps: opts.steps,
@@ -280,12 +280,12 @@ export async function generateNemotronImage(opts: {
   } catch (e) { return { success: false, error: (e as Error).message }; }
 }
 
-export async function generateNemotronVideo(opts: { prompt: string; durationSec?: number; width?: number; height?: number }): Promise<{ success: boolean; url?: string; error?: string }> {
-  const key = getNemotronApiKey();
-  if (!key) return { success: false, error: 'Nemotron API key missing (set VITE_NVIDIA_API_KEY).' };
+export async function generateNvidiaVideo(opts: { prompt: string; durationSec?: number; width?: number; height?: number }): Promise<{ success: boolean; url?: string; error?: string }> {
+  const key = getNvidiaApiKey();
+  if (!key) return { success: false, error: 'NVIDIA API key missing (set VITE_NVIDIA_API_KEY).' };
   const url = getNvidiaVideoUrl();
   try {
-    const body: any = { model: getNemotronModel(), prompt: opts.prompt, duration: opts.durationSec, width: opts.width, height: opts.height, fps: 24, num_frames: undefined };
+    const body: any = { model: getNvidiaModel(), prompt: opts.prompt, duration: opts.durationSec, width: opts.width, height: opts.height, fps: 24, num_frames: undefined };
     const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` }, body: JSON.stringify(body) });
     if (!resp.ok) { const t = await resp.text(); return { success: false, error: `NVIDIA video error (${resp.status}): ${t.slice(0, 180)}` }; }
     const data = await resp.json();
@@ -304,9 +304,9 @@ export async function checkNvidiaVideoHealth(): Promise<{ ok: boolean; message: 
   return { ok: false, message: 'Video health check disabled (proxy not implemented)' };
 }
 
-// ---- Streaming chat for Nemotron (SSE/NDJSON tolerant) ----
-export async function* streamNemotronChat(history: ChatMessage[], message: string, temperature: number): AsyncGenerator<TextGenerationResponse> {
+// ---- Streaming chat for NVIDIA (SSE/NDJSON tolerant) ----
+export async function* streamNvidiaChat(history: ChatMessage[], message: string, temperature: number): AsyncGenerator<TextGenerationResponse> {
   // Fallback to non-streaming proxy for now
-  const response = await generateNemotronText(message, undefined, temperature);
+  const response = await generateNvidiaText(message, undefined, temperature);
   yield response;
 }

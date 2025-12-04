@@ -308,16 +308,16 @@ const Chat: React.FC = () => {
         setShowNewChatDialog(false);
     };
 
-    const activeProvider = 'nemotron';
+    const activeProvider = 'nvidia';
 
     return (
         <div className="h-full flex flex-col p-2 sm:p-4 bg-white dark:bg-slate-900/50 rounded-2xl shadow-lg">
             <header className="mb-4 flex-shrink-0 pb-3 border-b border-slate-200 dark:border-slate-700/60">
                 <div className="flex items-start gap-2 flex-wrap">
                     <div>
-                        <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200">Chat <span className="ml-2 px-2 py-0.5 text-[10px] font-semibold rounded bg-violet-100 dark:bg-violet-800/40 text-violet-700 dark:text-violet-300 uppercase tracking-wide">Nemotron</span></h2>
+                        <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200">Chat <span className="ml-2 px-2 py-0.5 text-[10px] font-semibold rounded bg-violet-100 dark:bg-violet-800/40 text-violet-700 dark:text-violet-300 uppercase tracking-wide">NVIDIA</span></h2>
                         <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">Have a conversation with the AI.
-                            <span className="inline-block px-2 py-0.5 text-[10px] font-semibold rounded bg-violet-100 dark:bg-violet-800/40 text-violet-700 dark:text-violet-300 uppercase tracking-wide" title="Active provider">Nemotron</span>
+                            <span className="inline-block px-2 py-0.5 text-[10px] font-semibold rounded bg-violet-100 dark:bg-violet-800/40 text-violet-700 dark:text-violet-300 uppercase tracking-wide" title="Active provider">NVIDIA</span>
                         </p>
                     </div>
                     {/* Right-aligned toolbar controls */}
