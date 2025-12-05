@@ -184,32 +184,70 @@ app.put("/api/user", authenticateToken, async (req, res) => {
 
 // --- AI Proxy Routes ---
 
-// Chat Proxy (NVIDIA Nemotron)
+// Chat Proxy (NVIDIA Nemotron via OpenRouter)
 app.post("/api/chat", authenticateToken, async (req, res) => {
   try {
     const NVIDIA_KEY = process.env.VITE_NVIDIA_API_KEY;
-    const NVIDIA_BASE = process.env.VITE_NVIDIA_BASE_URL || "https://integrate.api.nvidia.com";
+    console.log("DEBUG: VITE_NVIDIA_API_KEY present?", !!NVIDIA_KEY, "Length:", NVIDIA_KEY ? NVIDIA_KEY.length : 0);
+    const NVIDIA_BASE = process.env.VITE_NVIDIA_BASE_URL || "https://openrouter.ai/api/v1";
 
     if (!NVIDIA_KEY) return res.status(500).json({ error: "NVIDIA API key not configured" });
 
-    const response = await fetch(`${NVIDIA_BASE}/v1/chat/completions`, {
+    const isStream = req.body.stream === true;
+
+    // Create a body that ensures stream matches client intent
+    const upstreamBody = { ...req.body, stream: isStream };
+
+    const response = await fetch(`${NVIDIA_BASE}/chat/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${NVIDIA_KEY}`
+        "Authorization": `Bearer ${NVIDIA_KEY}`,
+        // OpenRouter specific: identify app
+        "HTTP-Referer": "https://fantom-ai.local",
+        "X-Title": "Fantom AI"
       },
-      body: JSON.stringify(req.body)
+      body: JSON.stringify(upstreamBody)
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      return res.status(response.status).json({ error: `NVIDIA API error: ${errorText}` });
+      return res.status(response.status).json({ error: `Upstream error: ${errorText}` });
     }
 
-    const data = await response.json();
-    res.json(data);
+    if (isStream) {
+      // Set SSE headers immediately
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      });
+
+      // Node native fetch body is a ReadableStream (Web Standard)
+      try {
+        // @ts-ignore
+        for await (const chunk of response.body) {
+          res.write(chunk);
+        }
+      } catch (error) {
+        console.error("Stream piping error:", error);
+        res.end();
+      } finally {
+        res.end();
+      }
+    } else {
+      // Normal JSON response
+      const data = await response.json();
+      res.json(data);
+    }
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    console.error("Chat proxy error:", e);
+    // If headers already sent (streaming started), we can't send JSON error
+    if (!res.headersSent) {
+      res.status(500).json({ error: e.message });
+    } else {
+      res.end();
+    }
   }
 });
 

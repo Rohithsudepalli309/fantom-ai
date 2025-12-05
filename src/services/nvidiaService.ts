@@ -306,7 +306,72 @@ export async function checkNvidiaVideoHealth(): Promise<{ ok: boolean; message: 
 
 // ---- Streaming chat for NVIDIA (SSE/NDJSON tolerant) ----
 export async function* streamNvidiaChat(history: ChatMessage[], message: string, temperature: number): AsyncGenerator<TextGenerationResponse> {
-  // Fallback to non-streaming proxy for now
-  const response = await generateNvidiaText(message, undefined, temperature);
-  yield response;
+  // Client-side key check removed; relying on backend proxy key.
+  // const key = getNvidiaApiKey();
+
+  const base = getNvidiaBase();
+  const model = getNvidiaModel();
+
+  const body = {
+    model,
+    messages: [
+      ...history,
+      { role: 'user', content: message }
+    ],
+    temperature,
+    max_tokens: getNumberOverride('VITE_NVIDIA_MAX_TOKENS', 1024),
+    stream: true
+  };
+
+  try {
+    const response = await authenticatedFetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      const t = await response.text();
+      yield { success: false, error: `Backend error (${response.status}): ${t}` };
+      return;
+    }
+
+    if (!response.body) {
+      yield { success: false, error: 'No response body for stream' };
+      return;
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || ''; // Keep partial line in buffer
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed === 'data: [DONE]') continue;
+        if (trimmed.startsWith('data: ')) {
+          try {
+            console.log('Stream chunk raw:', trimmed); // Debug log
+            const data = JSON.parse(trimmed.slice(6));
+            const delta = data.choices?.[0]?.delta?.content || '';
+            if (delta) {
+              console.log('Stream text delta:', delta); // Debug log
+              yield { success: true, text: delta };
+            }
+          } catch (e) {
+            console.warn('Failed to parse stream chunk:', trimmed);
+          }
+        }
+      }
+    }
+  } catch (e) {
+    yield { success: false, error: (e as Error).message };
+  }
 }
