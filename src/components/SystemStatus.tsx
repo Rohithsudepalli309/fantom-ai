@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { checkNemotronHealth, isNemotronConfigured } from '@/services/nemotronService';
+import { checkNvidiaHealth, isNvidiaConfigured } from '@/services/nvidiaService';
 import { checkGrokHealth, isGrokConfigured } from '@/services/grokService';
 
 const StatusCard: React.FC<{
@@ -42,9 +42,9 @@ const StatusCard: React.FC<{
                 <div className="flex items-center justify-between text-sm">
                     <span className="text-slate-500 dark:text-slate-400">Status:</span>
                     <span className={`font-medium ${status === 'valid' ? 'text-green-600 dark:text-green-400' :
-                            status === 'invalid' ? 'text-red-600 dark:text-red-400' :
-                                status === 'checking' ? 'text-amber-600 dark:text-amber-400' :
-                                    'text-slate-500'
+                        status === 'invalid' ? 'text-red-600 dark:text-red-400' :
+                            status === 'checking' ? 'text-amber-600 dark:text-amber-400' :
+                                'text-slate-500'
                         }`}>
                         {status === 'idle' ? 'Unknown' :
                             status === 'checking' ? 'Checking...' :
@@ -98,11 +98,11 @@ const SystemStatus: React.FC = () => {
     const [grokLastCheck, setGrokLastCheck] = useState<string | null>(null);
 
     const checkNvidia = async () => {
-        if (!isNemotronConfigured()) return;
+        if (!isNvidiaConfigured()) return;
         setNvidiaStatus('checking');
         setNvidiaMsg(null);
         const start = performance.now();
-        const res = await checkNemotronHealth();
+        const res = await checkNvidiaHealth();
         const end = performance.now();
         setNvidiaLatency(Math.round(end - start));
         setNvidiaLastCheck(new Date().toLocaleTimeString());
@@ -154,7 +154,7 @@ const SystemStatus: React.FC = () => {
                     lastCheck={nvidiaLastCheck}
                     latency={nvidiaLatency}
                     onVerify={checkNvidia}
-                    isConfigured={isNemotronConfigured()}
+                    isConfigured={isNvidiaConfigured()}
                     color="green"
                 />
                 <StatusCard

@@ -1,4 +1,5 @@
 const express = require("express");
+const path = require("path");
 const { MongoClient, ObjectId } = require("mongodb");
 const bcrypt = require("bcryptjs"); // Using bcryptjs for Windows compatibility
 const jwt = require("jsonwebtoken");
@@ -241,38 +242,20 @@ app.post("/api/vision", authenticateToken, async (req, res) => {
   }
 });
 
-// Image Proxy (xAI via OpenRouter)
+// Image Proxy (Pollinations.ai)
 app.post("/api/image", authenticateToken, async (req, res) => {
   try {
-    const XAI_KEY = process.env.VITE_XAI_API_KEY;
-    const XAI_BASE = process.env.VITE_XAI_BASE_URL || "https://openrouter.ai/api/v1";
+    const { prompt, model } = req.body;
 
-    if (!XAI_KEY) return res.status(500).json({ error: "xAI API key not configured" });
+    // Use Pollinations.ai as a reliable free provider
+    // It supports Flux via model param if needed, but default is good.
+    const encodedPrompt = encodeURIComponent(prompt || "random image");
+    const imageUrl = `https://pollinations.ai/p/${encodedPrompt}?width=1024&height=1024&seed=${Math.floor(Math.random() * 1000)}`;
 
-    // Ensure model is OpenRouter compatible if using OpenRouter
-    const body = req.body;
-    if (XAI_BASE.includes("openrouter") && !body.model.startsWith("xai/")) {
-      // Fallback/Correction for OpenRouter model names if needed
-      // But frontend service should ideally send the right one.
-      // We'll trust the frontend for now, or the user can configure VITE_XAI_IMAGE_MODEL
-    }
-
-    const response = await fetch(`${XAI_BASE}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${XAI_KEY}`
-      },
-      body: JSON.stringify(body)
+    res.json({
+      data: [{ url: imageUrl }], // OpenAI compatible format
+      provider: 'pollinations'
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      return res.status(response.status).json({ error: `xAI API error: ${errorText}` });
-    }
-
-    const data = await response.json();
-    res.json(data);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -283,5 +266,14 @@ app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: "Something went wrong!" });
 });
+
+// Serve static files in production
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "../dist")));
+
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname, "../dist/index.html"));
+  });
+}
 
 app.listen(4000, () => console.log("Server running on http://127.0.0.1:4000"));

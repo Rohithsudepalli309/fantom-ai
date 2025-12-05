@@ -75,7 +75,7 @@ vi.mock('../src/components/Layout', async () => {
     // return { default: () => <div>Layout <Outlet /></div> };
     // This works in async mock factory!
     const { Outlet } = await vi.importActual('react-router-dom');
-    return { default: () => <div>Layout <Outlet /></div> };
+    return { default: () => <div>Layout <div data-testid="outlet" /></div> };
 });
 
 

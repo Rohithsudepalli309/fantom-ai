@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { isNemotronConfigured, checkNemotronHealth } from '@/services/nemotronService';
+import { isNvidiaConfigured, checkNvidiaHealth } from '@/services/nvidiaService';
 import { isGrokConfigured, checkGrokHealth } from '@/services/grokService';
 
 type Status = 'checking' | 'missing' | 'invalid' | 'valid';
@@ -12,11 +12,11 @@ const ApiKeyNotice: React.FC<{ onOpenSettings?: () => void }>
 
     const runCheck = async () => {
       // Check NVIDIA
-      if (!isNemotronConfigured()) {
+      if (!isNvidiaConfigured()) {
         setNvidiaStatus('missing');
       } else {
         setNvidiaStatus('checking');
-        checkNemotronHealth().then(res => {
+        checkNvidiaHealth().then(res => {
           setNvidiaStatus(res.ok ? 'valid' : 'invalid');
         });
       }

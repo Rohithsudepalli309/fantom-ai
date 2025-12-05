@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { checkNemotronHealth, isNemotronConfigured } from '@/services/nemotronService';
+import { checkNvidiaHealth, isNvidiaConfigured } from '@/services/nvidiaService';
 import { checkGrokHealth, isGrokConfigured } from '@/services/grokService';
 import { useSettings } from '@/contexts/SettingsContext';
 import { AppSettings } from '@/contexts/appSettings';
@@ -161,11 +161,11 @@ const Settings: React.FC = () => {
                       className="flex-1 p-2 text-sm rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700"
                       aria-label="NVIDIA API key"
                     />
-                    <span className={`px-2 py-1 text-xs font-semibold rounded ${isNemotronConfigured()
-                        ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                    <span className={`px-2 py-1 text-xs font-semibold rounded ${isNvidiaConfigured()
+                      ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
                       }`}>
-                      {isNemotronConfigured() ? '✓ Set' : 'Not set'}
+                      {isNvidiaConfigured() ? '✓ Set' : 'Not set'}
                     </span>
                   </div>
                   <div className="flex gap-2">
@@ -195,7 +195,7 @@ const Settings: React.FC = () => {
                       onClick={async () => {
                         setNvidiaKeyStatus('checking');
                         setNvidiaKeyMsg(null);
-                        const res = await checkNemotronHealth();
+                        const res = await checkNvidiaHealth();
                         if (res.ok) {
                           setNvidiaKeyStatus('valid');
                           setNvidiaKeyMsg('API key is valid.');
@@ -206,16 +206,16 @@ const Settings: React.FC = () => {
                           show({ message: 'NVIDIA API key invalid', variant: 'error' });
                         }
                       }}
-                      disabled={!isNemotronConfigured()}
+                      disabled={!isNvidiaConfigured()}
                       className="px-3 py-1.5 text-xs font-semibold rounded bg-emerald-600 text-white hover:bg-emerald-700 disabled:bg-slate-400 dark:disabled:bg-slate-600 disabled:cursor-not-allowed"
                     >Verify</button>
                   </div>
                   {nvidiaKeyStatus !== 'idle' && (
                     <div className={`w-full text-xs p-2 rounded border ${nvidiaKeyStatus === 'valid'
-                        ? 'border-green-200 bg-green-50 dark:bg-green-900/30 dark:border-green-800/50 text-green-700 dark:text-green-300'
-                        : nvidiaKeyStatus === 'checking'
-                          ? 'border-slate-300 bg-slate-50 dark:bg-slate-800/30 dark:border-slate-700 text-slate-600 dark:text-slate-300'
-                          : 'border-red-200 bg-red-50 dark:bg-red-900/30 dark:border-red-800/50 text-red-700 dark:text-red-300'
+                      ? 'border-green-200 bg-green-50 dark:bg-green-900/30 dark:border-green-800/50 text-green-700 dark:text-green-300'
+                      : nvidiaKeyStatus === 'checking'
+                        ? 'border-slate-300 bg-slate-50 dark:bg-slate-800/30 dark:border-slate-700 text-slate-600 dark:text-slate-300'
+                        : 'border-red-200 bg-red-50 dark:bg-red-900/30 dark:border-red-800/50 text-red-700 dark:text-red-300'
                       }`}>
                       {nvidiaKeyStatus === 'checking' ? 'Verifying…' : nvidiaKeyMsg}
                     </div>
@@ -238,8 +238,8 @@ const Settings: React.FC = () => {
                       aria-label="xAI Grok API key"
                     />
                     <span className={`px-2 py-1 text-xs font-semibold rounded ${isGrokConfigured()
-                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
                       }`}>
                       {isGrokConfigured() ? '✓ Set' : 'Not set'}
                     </span>
@@ -288,10 +288,10 @@ const Settings: React.FC = () => {
                   </div>
                   {grokKeyStatus !== 'idle' && (
                     <div className={`w-full text-xs p-2 rounded border ${grokKeyStatus === 'valid'
-                        ? 'border-blue-200 bg-blue-50 dark:bg-blue-900/30 dark:border-blue-800/50 text-blue-700 dark:text-blue-300'
-                        : grokKeyStatus === 'checking'
-                          ? 'border-slate-300 bg-slate-50 dark:bg-slate-800/30 dark:border-slate-700 text-slate-600 dark:text-slate-300'
-                          : 'border-red-200 bg-red-50 dark:bg-red-900/30 dark:border-red-800/50 text-red-700 dark:text-red-300'
+                      ? 'border-blue-200 bg-blue-50 dark:bg-blue-900/30 dark:border-blue-800/50 text-blue-700 dark:text-blue-300'
+                      : grokKeyStatus === 'checking'
+                        ? 'border-slate-300 bg-slate-50 dark:bg-slate-800/30 dark:border-slate-700 text-slate-600 dark:text-slate-300'
+                        : 'border-red-200 bg-red-50 dark:bg-red-900/30 dark:border-red-800/50 text-red-700 dark:text-red-300'
                       }`}>
                       {grokKeyStatus === 'checking' ? 'Verifying…' : grokKeyMsg}
                     </div>
